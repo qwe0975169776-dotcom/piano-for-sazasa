@@ -299,6 +299,7 @@ select:disabled{ opacity:.45; }
 .bar-check.on .ck-mark{ stroke:#fff; }
 .bar-check:focus-visible{ outline:none; }
 .bar-check:focus-visible .ck-ring{ stroke:var(--accent); stroke-width:3; }
+.beam{ fill:var(--staff); }
 .rest-block{ fill:var(--staff); }
 .rest-glyph{ font-family:"Noto Music","Segoe UI Symbol",serif; fill:var(--staff); }
 .rest-label{ font-family:"Noto Sans TC",sans-serif; font-size:9px; font-weight:700; fill:var(--muted); }
@@ -1098,6 +1099,21 @@ function buildSystem(svgParts, firstBar, count, perLine, W){
       svgParts.push(chordPill(gx, 14, ch));
     });
 
+    /* 連尾線：同一拍內連續兩個八分音符連在一起（八分休止符、拍子中間開始的單獨八分音符仍然用旗子） */
+    const pairInfo = {};
+    let acc = 0;
+    for(let k = 0; k < bar.right.length; k++){
+      const n0 = bar.right[k], n1 = bar.right[k+1];
+      const onBeat = Math.abs(acc - Math.round(acc)) < 1e-9;
+      if(!n0.rest && n0.dur === 0.5 && onBeat && n1 && !n1.rest && n1.dur === 0.5){
+        pairInfo[k] = {first:true};
+        pairInfo[k+1] = {second:true};
+        acc += 1; k++;
+        continue;
+      }
+      acc += n0.dur;
+    }
+
     let beat = 0;
     bar.right.forEach(function(n, ni){
       const x = beatX(beat);
@@ -1107,7 +1123,24 @@ function buildSystem(svgParts, firstBar, count, perLine, W){
         return;
       }
       const y = yTreble(n.pc, n.oct);
-      svgParts.push(drawNote(x, y, n.dur, "treble"));
+      const pi = pairInfo[ni];
+      let nopt = null;
+      if(pi && pi.first){
+        const m = bar.right[ni+1];
+        const xb = beatX(beat + n.dur), yb0 = yTreble(m.pc, m.oct);
+        const up = ((y + yb0) / 2) > (TREBLE_TOP + 20);
+        const sxa = up ? x + 4.6 : x - 4.6, sxb = up ? xb + 4.6 : xb - 4.6;
+        const ta = up ? y - 30 : y + 30, tb = up ? yb0 - 30 : yb0 + 30;
+        const slope = Math.max(-8, Math.min(8, tb - ta));
+        const A = up ? Math.min(ta, tb - slope) : Math.max(ta, tb - slope);
+        const geom = {up:up, sxa:sxa, sxb:sxb, A:A, B:A + slope};
+        pi.geom = geom;
+        pairInfo[ni+1].geom = geom;
+        nopt = {stemUp:up, tip:geom.A, noFlag:true};
+      }else if(pi && pi.second){
+        nopt = {stemUp:pi.geom.up, tip:pi.geom.B, noFlag:true};
+      }
+      svgParts.push(drawNote(x, y, n.dur, "treble", nopt));
 
       const fing = n.finger || DEFAULT_FINGER[n.pc];
       svgParts.push('<text class="fing-text" x="'+r1(x)+'" y="'+r1(y-9)+'" text-anchor="middle">'+fing+'</text>');
@@ -1118,6 +1151,11 @@ function buildSystem(svgParts, firstBar, count, perLine, W){
       );
 
       svgParts.push('<rect x="'+r1(x-8)+'" y="'+r1(y-8)+'" width="16" height="16" fill="none" class="note-anchor" data-hand="right" data-bar="'+bi+'" data-idx="'+ni+'"/>');
+
+      if(pi && pi.second){
+        const q = pi.geom, th = q.up ? 4 : -4;
+        svgParts.push('<polygon class="beam" points="'+r1(q.sxa-0.8)+','+r1(q.A)+' '+r1(q.sxb+0.8)+','+r1(q.B)+' '+r1(q.sxb+0.8)+','+r1(q.B+th)+' '+r1(q.sxa-0.8)+','+r1(q.A+th)+'"/>');
+      }
 
       beat += n.dur;
     });
@@ -1193,7 +1231,7 @@ function circleNum(n){
   return ["⓪","①","②","③","④","⑤","⑥","⑦","⑧","⑨"][n] || String(n);
 }
 
-function drawNote(x, y, dur, clef){
+function drawNote(x, y, dur, clef, opt){
   const g = [];
   const hollow = dur >= 2;
   const hasStem = dur < 4;
@@ -1215,12 +1253,13 @@ function drawNote(x, y, dur, clef){
   g.push('<ellipse class="'+cls+'" cx="'+r1(x)+'" cy="'+r1(y)+'" rx="5.5" ry="4" transform="rotate(-20 '+r1(x)+' '+r1(y)+')"/>');
 
   if(hasStem){
-    const up = y > (clef === "treble" ? 58 : 140);
+    /* opt：連尾線（beam）時，由外面指定符桿方向與符桿尖端，並且不畫旗子 */
+    const up = (opt && typeof opt.stemUp === "boolean") ? opt.stemUp : y > (clef === "treble" ? 58 : 140);
     const sx = up ? x + 4.6 : x - 4.6;
-    const sy = up ? y - 30 : y + 30;
+    const sy = (opt && typeof opt.tip === "number") ? opt.tip : (up ? y - 30 : y + 30);
     g.push('<line class="stem" x1="'+r1(sx)+'" y1="'+r1(y)+'" x2="'+r1(sx)+'" y2="'+r1(sy)+'"/>');
 
-    if(dur <= 0.5){
+    if(dur <= 0.5 && !(opt && opt.noFlag)){
       if(up){
         g.push('<path class="flag" d="M '+r1(sx)+' '+r1(sy)+' q 8 5 6 16"/>');
       }else{
