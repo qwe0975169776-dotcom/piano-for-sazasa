@@ -575,6 +575,7 @@ details.card[open] > summary::before{ content:"▾ "; }
         <li>電子琴通常有一個「分割點」，分割點左邊是伴奏區。請學生把手放在分割點左邊。</li>
         <li>左手只需要按三個位置：Do（C）、Fa（F）、Sol（G），手不需要移動，靠手指伸縮即可。</li>
         <li>本頁的左手指法：Do 用第 ⑤ 指、Fa 用第 ② 指、Sol 用第 ① 指。</li>
+        <li>第 6 課的挑戰曲多了 Am（A 小和弦）：左手小指 ⑤ 往下伸到比 Do 低的 La，換和弦時手要稍微移動。電子琴單指和弦要彈出小和弦的方法依機型不同（常見做法是按 La 加左邊一個黑鍵），請對照琴的說明書。</li>
       </ul>
       <h3>四、左手手型</h3>
       <ul>
@@ -622,9 +623,14 @@ const NS = "http://www.w3.org/2000/svg";
 
 const SOLFEGE = {C:"Do", D:"Re", E:"Mi", F:"Fa", G:"Sol", A:"La", B:"Si"};
 const SOL_VAR = {C:"--do", D:"--re", E:"--mi", F:"--fa", G:"--sol", A:"--la", B:"--si"};
-const CHORD_VAR = {C:"--do", F:"--fa", G:"--sol"};
+const CHORD_VAR = {C:"--do", F:"--fa", G:"--sol", A:"--la"};
+/* A 和弦在這個網頁是 A 小調（Am），資料裡寫 "A"，畫面上顯示 Am */
+const CHORD_NAME = {C:"C", F:"F", G:"G", A:"Am"};
+function cname(c){ return CHORD_NAME[c] || c; }
+/* 左手音符畫在低音譜的哪個八度（La 比 Do 低，所以是 A2） */
+const LEFT_OCT = {C:3, F:3, G:3, A:2};
 const DEFAULT_FINGER = {C:1, D:2, E:3, F:4, G:5, A:5, B:5};
-const LEFT_FINGER = {C:5, F:2, G:1};
+const LEFT_FINGER = {C:5, F:2, G:1, A:5};
 const SEMI = {C:0, D:2, E:4, F:5, G:7, A:9, B:11};
 
 /* ============ 課程與曲目 ============
@@ -638,7 +644,8 @@ const LESSONS = [
   { title:"第 2 課 · C 和 G 換和弦", goal:"左手在 Do ⑤ 和 Sol ① 之間換，右手留在 C 位置不移動。", songs:["mary","bee"] },
   { title:"第 3 課 · 節奏變化", goal:"附點四分音符（長—短）和八分音符（兩個一拍）。", songs:["ode","tiger"] },
   { title:"第 4 課 · 右手伸展到 La", goal:"大拇指留在 Do，小指伸到 La；4 指彈 Sol。", songs:["puppy"] },
-  { title:"第 5 課 · 加入 F 和弦", goal:"左手食指 ② 按 Fa，C、F、G 三個和弦輪流換。", songs:["star","spring"] }
+  { title:"第 5 課 · 加入 F 和弦", goal:"左手食指 ② 按 Fa，C、F、G 三個和弦輪流換。", songs:["star","spring"] },
+  { title:"第 6 課 · 挑戰：Am 和弦", goal:"左手加入 Am：小指往下伸到 La（低）；右手有休止符搶拍、跳音，還有一個拇指穿過去的跑句（第 12 小節）。", songs:["rainbow"] }
 ];
 
 const SONGS = [
@@ -742,6 +749,27 @@ const SONGS = [
     ]
   },
   {
+    id:"rainbow", title:"彩虹小路（挑戰曲）", stars:3, chords:["C","A","F","G"],
+    bars:[
+      {r:"E4 1 E4 0.5 F4 0.5 G4 1 E4 1",                                  l:"C"},
+      {r:"A4 1.5 G4 0.5 E4 1 C4 1",                                       l:"A"},
+      {r:"F4 1 A4 1 A4 0.5 G4 0.5 F4 1",                                  l:"F"},
+      {r:"G4 1 F4 0.5 E4 0.5 D4 2",                                       l:"G"},
+      {r:"E4 1 E4 0.5 F4 0.5 G4 1 A4 1",                                  l:"C"},
+      {r:"A4 1.5 G4 0.5 E4 1 G4 1",                                       l:"A"},
+      {r:"F4 1 A4 1 F4 0.5 G4 0.5 E4 0.5 D4 0.5",                         l:"F"},
+      {r:"G4 1 D4 1 C4 2",                                                l:"G|C"},
+      {r:"E4 0.5 A4 0.5 A4 1 E4 1 C4 1",                                  l:"A"},
+      {r:"F4 0.5 A4 0.5 F4 1 A4 1 F4 1",                                  l:"F"},
+      {r:"R 0.5 G4 0.5 G4 1 E4 0.5 C4 0.5 C4 1",                          l:"C"},
+      {r:"D4/2 0.5 E4/3 0.5 F4/1 0.5 G4/2 0.5 A4/3 0.5 B4/4 0.5 B4/4 1", l:"G"},
+      {r:"E4 1 E4 0.5 F4 0.5 G4 1 E4 1",                                  l:"C"},
+      {r:"A4 1.5 G4 0.5 E4 1 C4 1",                                       l:"A"},
+      {r:"F4 1 A4 1 G4 1 D4 1",                                           l:"F|G"},
+      {r:"C4 4",                                                          l:"C"}
+    ]
+  },
+  {
     id:"spring", title:"春神來了", stars:2, chords:["C","F","G"],
     bars:[
       {r:"G4/4 1 G4/4 1 A4/5 1 G4/4 1", l:"C"},
@@ -791,7 +819,7 @@ SONGS.forEach(function(s){
     });
     const left = b.l.split("|");
     left.forEach(function(c){
-      if(!/^[CFG]$/.test(c)) SONG_PROBLEMS.push(where + "左手和弦「"+c+"」只能用 C、F、G");
+      if(!/^[CFGA]$/.test(c)) SONG_PROBLEMS.push(where + "左手和弦「"+c+"」只能用 C、F、G、A（A 代表 Am）");
     });
     return { right: p.notes, left: left };
   });
@@ -1098,7 +1126,7 @@ function buildSystem(svgParts, firstBar, count, perLine, W){
     const lDurEach = 4 / lcount;
     chordList.forEach(function(ch, ci){
       const pc = ch;
-      const y = yBass(pc, 3);
+      const y = yBass(pc, LEFT_OCT[pc] || 3);
       const lx = beatX(ci*lDurEach);
       svgParts.push(drawNote(lx, y, lDurEach, "bass"));
 
@@ -1159,7 +1187,7 @@ function chordPill(cx, cy, ch){
   const v = CHORD_VAR[ch] || "--muted";
   const w = 26, h = 16;
   return '<rect x="'+r1(cx-w/2)+'" y="'+r1(cy-h/2)+'" width="'+w+'" height="'+h+'" rx="8" fill="var('+v+')"/>' +
-         '<text class="chord-pill" x="'+r1(cx)+'" y="'+r1(cy+4)+'" text-anchor="middle">'+ch+'</text>';
+         '<text class="chord-pill" x="'+r1(cx)+'" y="'+r1(cy+4)+'" text-anchor="middle">'+cname(ch)+'</text>';
 }
 function circleNum(n){
   return ["⓪","①","②","③","④","⑤","⑥","⑦","⑧","⑨"][n] || String(n);
@@ -1291,7 +1319,7 @@ function renderScoreMeta(){
     .map(function(k){ return '<span class="tag" style="color:var(--'+SOL_VAR[k]+');font-weight:700;">'+SOLFEGE[k]+'</span>'; })
     .join(" ");
   const chs = song.chords.map(function(c){
-    return '<span class="tag" style="color:#fff;background:var('+CHORD_VAR[c]+')">'+c+'</span>';
+    return '<span class="tag" style="color:#fff;background:var('+CHORD_VAR[c]+')">'+cname(c)+'</span>';
   }).join(" ");
 
   const lesson = LESSONS.find(function(L){ return L.songs.indexOf(song.id) >= 0; });
@@ -1405,7 +1433,7 @@ function renderKeyboard(){
     btn.setAttribute("data-note", name);
     btn.setAttribute("aria-label", SOLFEGE[pc] + " " + name);
 
-    const isLeftChord = (pc === "C" || pc === "F" || pc === "G");
+    const isLeftChord = (pc === "C" || pc === "F" || pc === "G" || pc === "A");
     const leftHtml = isLeftChord
       ? '<span class="wk-left show" style="--c:var('+CHORD_VAR[pc]+')">左'+circleNum(LEFT_FINGER[pc])+'</span>'
       : '<span class="wk-left">.</span>';
@@ -1443,8 +1471,8 @@ function pressKeyByNote(name){
   const midi = pitchToMidi(pc, oct) + (sharp ? 1 : 0);
   const t = ac.currentTime + 0.01;
   pianoNote(midi, t, 0.5, audio.melody);
-  if(pc === "C" || pc === "F" || pc === "G"){
-    const chordMidi = {C:[48,52,55], F:[53,57,60], G:[55,59,62]}[pc];
+  if(pc === "C" || pc === "F" || pc === "G" || pc === "A"){
+    const chordMidi = {C:[48,52,55], F:[53,57,60], G:[55,59,62], A:[57,60,64]}[pc];
     chordMidi.forEach(function(mm){ pianoNote(mm, t, 0.5, audio.chord); });
   }
   const el = keyEls.get(name);
@@ -1588,7 +1616,8 @@ function chordMidi(name){
   return {
     C:{bass:36, tones:[48,52,55]},
     F:{bass:41, tones:[53,57,60]},
-    G:{bass:43, tones:[55,59,62]}
+    G:{bass:43, tones:[55,59,62]},
+    A:{bass:45, tones:[57,60,64]}
   }[name];
 }
 
@@ -1913,7 +1942,7 @@ function updatePlaybackVisual(now){
 
   const chordNow = chordForBar(barObj.index, now, curRound);
   const ncValue = document.getElementById("ncValue");
-  ncValue.textContent = chordNow;
+  ncValue.textContent = cname(chordNow);
   ncValue.style.color = "var(" + (CHORD_VAR[chordNow] || "--accent") + ")";
   document.getElementById("ncLeft").textContent =
     SOLFEGE[chordNow] + " " + circleNum(LEFT_FINGER[chordNow] || 5);
@@ -1923,7 +1952,7 @@ function updatePlaybackVisual(now){
   let nextChord = "—";
   if(nextBar < song.bars.length) nextChord = song.parsed[nextBar].left[0];
   else if(player.loop) nextChord = song.parsed[currentRange()[0]].left[0];
-  document.getElementById("ncNext").textContent = "下一個：" + nextChord;
+  document.getElementById("ncNext").textContent = "下一個：" + cname(nextChord);
 
   clearHands();
   if(curNote){
@@ -1961,7 +1990,7 @@ function renderSolfegeStrip(){
 function songCard(s, i){
   const stars = "★".repeat(s.stars) + "☆".repeat(3 - s.stars);
   const chips = s.chords.map(function(c){
-    return '<i class="ch-chip" style="--c:var('+CHORD_VAR[c]+')">'+c+'</i>';
+    return '<i class="ch-chip" style="--c:var('+CHORD_VAR[c]+')">'+cname(c)+'</i>';
   }).join("");
   const done = doneBars(s.id).length, total = s.bars.length;
   const prog = done === 0 ? '' :
