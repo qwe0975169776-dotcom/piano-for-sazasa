@@ -300,6 +300,7 @@ select:disabled{ opacity:.45; }
 .bar-check:focus-visible{ outline:none; }
 .bar-check:focus-visible .ck-ring{ stroke:var(--accent); stroke-width:3; }
 .beam{ fill:var(--staff); }
+.left-fing{ font-family:"Noto Sans TC",sans-serif; font-size:9.5px; font-weight:700; fill:var(--muted); }
 .rest-block{ fill:var(--staff); }
 .rest-glyph{ font-family:"Noto Music","Segoe UI Symbol",serif; fill:var(--staff); }
 .rest-label{ font-family:"Noto Sans TC",sans-serif; font-size:9px; font-weight:700; fill:var(--muted); }
@@ -752,22 +753,22 @@ const SONGS = [
   {
     id:"rainbow", title:"彩虹小路（挑戰曲）", stars:3, chords:["C","A","F","G"],
     bars:[
-      {r:"E4 1 E4 0.5 F4 0.5 G4 1 E4 1",                                  l:"C"},
-      {r:"A4 1.5 G4 0.5 E4 1 C4 1",                                       l:"A"},
-      {r:"F4 1 A4 1 A4 0.5 G4 0.5 F4 1",                                  l:"F"},
-      {r:"G4 1 F4 0.5 E4 0.5 D4 2",                                       l:"G"},
-      {r:"E4 1 E4 0.5 F4 0.5 G4 1 A4 1",                                  l:"C"},
-      {r:"A4 1.5 G4 0.5 E4 1 G4 1",                                       l:"A"},
-      {r:"F4 1 A4 1 F4 0.5 G4 0.5 E4 0.5 D4 0.5",                         l:"F"},
-      {r:"G4 1 D4 1 C4 2",                                                l:"G|C"},
-      {r:"E4 0.5 A4 0.5 A4 1 E4 1 C4 1",                                  l:"A"},
-      {r:"F4 0.5 A4 0.5 F4 1 A4 1 F4 1",                                  l:"F"},
-      {r:"R 0.5 G4 0.5 G4 1 E4 0.5 C4 0.5 C4 1",                          l:"C"},
-      {r:"D4/2 0.5 E4/3 0.5 F4/1 0.5 G4/2 0.5 A4/3 0.5 B4/4 0.5 B4/4 1", l:"G"},
-      {r:"E4 1 E4 0.5 F4 0.5 G4 1 E4 1",                                  l:"C"},
-      {r:"A4 1.5 G4 0.5 E4 1 C4 1",                                       l:"A"},
-      {r:"F4 1 A4 1 G4 1 D4 1",                                           l:"F|G"},
-      {r:"C4 4",                                                          l:"C"}
+      {r:"E4 1 E4 0.5 F4 0.5 G4 1 E4 1",                                  l:"C", a:"q"},
+      {r:"A4 1.5 G4 0.5 E4 1 C4 1",                                       l:"A", a:"q"},
+      {r:"F4 1 A4 1 A4 0.5 G4 0.5 F4 1",                                  l:"F", a:"q"},
+      {r:"G4 1 F4 0.5 E4 0.5 D4 2",                                       l:"G", a:"q"},
+      {r:"E4 1 E4 0.5 F4 0.5 G4 1 A4 1",                                  l:"C", a:"e"},
+      {r:"A4 1.5 G4 0.5 E4 1 G4 1",                                       l:"A", a:"e"},
+      {r:"F4 1 A4 1 F4 0.5 G4 0.5 E4 0.5 D4 0.5",                         l:"F", a:"e"},
+      {r:"G4 1 D4 1 C4 2",                                                l:"G|C", a:"e"},
+      {r:"E4 0.5 A4 0.5 A4 1 E4 1 C4 1",                                  l:"A", a:"e"},
+      {r:"F4 0.5 A4 0.5 F4 1 A4 1 F4 1",                                  l:"F", a:"e"},
+      {r:"R 0.5 G4 0.5 G4 1 E4 0.5 C4 0.5 C4 1",                          l:"C", a:"e"},
+      {r:"D4/2 0.5 E4/3 0.5 F4/1 0.5 G4/2 0.5 A4/3 0.5 B4/4 0.5 B4/4 1", l:"G", a:"e"},
+      {r:"E4 1 E4 0.5 F4 0.5 G4 1 E4 1",                                  l:"C", a:"q"},
+      {r:"A4 1.5 G4 0.5 E4 1 C4 1",                                       l:"A", a:"q"},
+      {r:"F4 1 A4 1 G4 1 D4 1",                                           l:"F|G", a:"q"},
+      {r:"C4 4",                                                          l:"C", a:"c"}
     ]
   },
   {
@@ -806,6 +807,37 @@ function parseBar(str){
   }
   return {notes:out, bad:bad};
 }
+/* ===== 左手樣式 =====
+   w = 一個音（預設，和以前一樣）　q = 四分音符琶音　e = 八分音符琶音　c = 三個音疊在一起的和弦
+   琶音的三個音由低到高用 5、3、1 指彈；和弦轉位讓左手留在 Do 附近，不用大幅移動。 */
+const VOICING = {
+  C:[{pc:"C",oct:3,midi:48,f:5},{pc:"E",oct:3,midi:52,f:3},{pc:"G",oct:3,midi:55,f:1}],
+  F:[{pc:"C",oct:3,midi:48,f:5},{pc:"F",oct:3,midi:53,f:3},{pc:"A",oct:3,midi:57,f:1}],
+  G:[{pc:"B",oct:2,midi:47,f:5},{pc:"D",oct:3,midi:50,f:3},{pc:"G",oct:3,midi:55,f:1}],
+  A:[{pc:"A",oct:2,midi:45,f:5},{pc:"C",oct:3,midi:48,f:3},{pc:"E",oct:3,midi:52,f:1}]
+};
+const ARP_CYCLE = [0,1,2,1];
+function buildLeftItems(chords, pattern){
+  const seg = 4 / chords.length, items = [];
+  chords.forEach(function(ch, k){
+    const b0 = k * seg, v = VOICING[ch];
+    if(v && (pattern === "q" || pattern === "e")){
+      const step = pattern === "q" ? 1 : 0.5;
+      const n = Math.round(seg / step);
+      const cyc = (pattern === "q" && seg === 2) ? [0,2] : ARP_CYCLE;
+      for(let i = 0; i < n; i++){
+        items.push({beat:b0 + i*step, dur:step, chord:ch, style:pattern, first:i === 0, notes:[v[cyc[i % cyc.length]]]});
+      }
+    }else if(v && pattern === "c"){
+      items.push({beat:b0, dur:seg, chord:ch, style:"c", first:true, notes:v.slice()});
+    }else{
+      items.push({beat:b0, dur:seg, chord:ch, style:"w", legacy:true, first:true,
+        notes:[{pc:ch, oct:LEFT_OCT[ch] || 3, f:LEFT_FINGER[ch] || 5}]});
+    }
+  });
+  return items;
+}
+
 const SONG_PROBLEMS = [];
 SONGS.forEach(function(s){
   s.parsed = s.bars.map(function(b, bi){
@@ -822,8 +854,11 @@ SONGS.forEach(function(s){
     left.forEach(function(c){
       if(!/^[CFGA]$/.test(c)) SONG_PROBLEMS.push(where + "左手和弦「"+c+"」只能用 C、F、G、A（A 代表 Am）");
     });
-    return { right: p.notes, left: left };
+    const pat = b.a || "w";
+    if(["w","q","e","c"].indexOf(pat) < 0) SONG_PROBLEMS.push(where + "左手樣式「"+pat+"」只能用 w、q、e、c");
+    return { right: p.notes, left: left, pattern: pat, leftItems: buildLeftItems(left, pat) };
   });
+  s.hasArp = s.parsed.some(function(b){ return b.pattern !== "w"; });
 });
 
 const LS_KEY = "shuangshou-keyboard-v1";
@@ -1049,14 +1084,23 @@ function dIndex(pc, oct){ return oct*7 + STEP_IDX[pc]; }
 const TREBLE_E4 = dIndex("E",4);
 const BASS_A3   = dIndex("A",3);
 
-const TREBLE_TOP = 38, BASS_TOP = 120;
+const TREBLE_TOP = 38;
+let BASS_TOP = 120;
 function yTreble(pc, oct){ return TREBLE_TOP + 40 - (dIndex(pc,oct) - TREBLE_E4)*5; }
 /* 低音譜表最上面一線是 A3 */
 function yBass(pc, oct){   return BASS_TOP - (dIndex(pc,oct) - BASS_A3)*5; }
 
 const NOTE_SOLFEGE_ROW = 100;
-const LEFT_LABEL_Y = 176;
-const SYS_H = 212;
+let LEFT_LABEL_Y = 176, SYS_H = 212, CK_Y = 198, DIGIT_Y = 168, HL_H = 145;
+/* 有琶音的曲子，低音譜往下移一些，符桿才不會碰到右手的唱名；下面也多留一排指法數字 */
+function setLayout(arp){
+  BASS_TOP = arp ? 144 : 120;
+  LEFT_LABEL_Y = BASS_TOP + (arp ? 70 : 56);
+  DIGIT_Y = BASS_TOP + 56;
+  CK_Y = BASS_TOP + (arp ? 86 : 78);
+  SYS_H = BASS_TOP + (arp ? 100 : 92);
+  HL_H = LEFT_LABEL_Y - (arp ? 24 : 31);
+}
 const LEFT_PAD = 46;
 const RIGHT_PAD = 8;
 
@@ -1087,7 +1131,7 @@ function buildSystem(svgParts, firstBar, count, perLine, W){
     /* 第 b 拍的音符中心：右手與左手共用，這樣兩手同一拍一定垂直對齊 */
     const beatX = function(b){ return x0 + 11 + b*beatW + beatW*0.5; };
 
-    svgParts.push('<rect class="bar-hl" data-hlbar="'+bi+'" x="'+r1(x0)+'" y="30" width="'+r1(barW)+'" height="145" rx="6"/>');
+    svgParts.push('<rect class="bar-hl" data-hlbar="'+bi+'" x="'+r1(x0)+'" y="30" width="'+r1(barW)+'" height="'+HL_H+'" rx="6"/>');
     svgParts.push('<text class="bar-num" x="'+r1(x0+3)+'" y="16">'+(bi+1)+'</text>');
 
     const chordList = bar.left;
@@ -1160,31 +1204,81 @@ function buildSystem(svgParts, firstBar, count, perLine, W){
       beat += n.dur;
     });
 
-    const lcount = chordList.length;
-    const lDurEach = 4 / lcount;
-    chordList.forEach(function(ch, ci){
-      const pc = ch;
-      const y = yBass(pc, LEFT_OCT[pc] || 3);
-      const lx = beatX(ci*lDurEach);
-      svgParts.push(drawNote(lx, y, lDurEach, "bass"));
-
-      const fing = LEFT_FINGER[pc] || 5;
-      svgParts.push(
-        '<text class="left-label" x="'+r1(lx)+'" y="'+LEFT_LABEL_Y+'" text-anchor="middle">'+
-        SOLFEGE[pc]+' '+circleNum(fing)+'</text>'
-      );
-      svgParts.push('<rect x="'+r1(lx-8)+'" y="'+r1(y-8)+'" width="16" height="16" fill="none" class="note-anchor" data-hand="left" data-bar="'+bi+'" data-idx="'+ci+'"/>');
-    });
+    /* ===== 左手：單音、琶音（八分音符連尾線）、疊和弦 ===== */
+    const items = bar.leftItems;
+    function leftAnchor(x, y, idx){
+      return '<rect x="'+r1(x-8)+'" y="'+r1(y-8)+'" width="16" height="16" fill="none" class="note-anchor" data-hand="left" data-bar="'+bi+'" data-idx="'+idx+'"/>';
+    }
+    function leftExtras(it, x){
+      let out = "";
+      if(it.legacy){
+        const nt = it.notes[0];
+        out += '<text class="left-label" x="'+r1(x)+'" y="'+LEFT_LABEL_Y+'" text-anchor="middle">'+SOLFEGE[nt.pc]+' '+circleNum(nt.f)+'</text>';
+        return out;
+      }
+      const digits = it.notes.map(function(nt){ return nt.f; }).join("·");
+      out += '<text class="left-fing" x="'+r1(x)+'" y="'+DIGIT_Y+'" text-anchor="middle">'+digits+'</text>';
+      if(it.first){
+        out += '<text class="left-label" x="'+r1(x)+'" y="'+LEFT_LABEL_Y+'" text-anchor="middle">'+SOLFEGE[it.chord]+(it.style === "c" ? ' 和弦' : ' 琶音')+'</text>';
+      }
+      return out;
+    }
+    let li = 0;
+    while(li < items.length){
+      const it = items[li];
+      if(it.style === "e"){
+        /* 同一個和弦、同兩拍內的八分音符，連成一組（最多 4 個），符桿全部向上、連尾線是平的 */
+        const win = Math.floor(it.beat / 2 + 1e-9);
+        const grp = [];
+        while(li < items.length && items[li].style === "e" && Math.floor(items[li].beat / 2 + 1e-9) === win){
+          grp.push({it:items[li], idx:li}); li++;
+        }
+        const ys = grp.map(function(g){ return yBass(g.it.notes[0].pc, g.it.notes[0].oct); });
+        const tip = Math.min.apply(null, ys) - 26;
+        let sxFirst = 0, sxLast = 0;
+        grp.forEach(function(g, gi){
+          const x = beatX(g.it.beat), y = ys[gi];
+          svgParts.push(drawNote(x, y, 0.5, "bass", {stemUp:true, tip:tip, noFlag:true}));
+          svgParts.push(leftExtras(g.it, x));
+          svgParts.push(leftAnchor(x, y, g.idx));
+          if(gi === 0) sxFirst = x + 4.6;
+          sxLast = x + 4.6;
+        });
+        if(grp.length > 1){
+          svgParts.push('<polygon class="beam" points="'+r1(sxFirst-0.8)+','+r1(tip)+' '+r1(sxLast+0.8)+','+r1(tip)+' '+r1(sxLast+0.8)+','+r1(tip+4)+' '+r1(sxFirst-0.8)+','+r1(tip+4)+'"/>');
+        }
+        continue;
+      }
+      const x = beatX(it.beat);
+      if(it.style === "c"){
+        let inner = "";
+        it.notes.forEach(function(nt, k){
+          const y = yBass(nt.pc, nt.oct);
+          inner += drawNote(x, y, it.dur, "bass", {noStem: k > 0}).replace('<g class="note-group">','').replace(/<\/g>$/,'');
+        });
+        svgParts.push('<g class="note-group">'+inner+'</g>');
+        svgParts.push(leftExtras(it, x));
+        const my = yBass(it.notes[1].pc, it.notes[1].oct);
+        svgParts.push(leftAnchor(x, my, li));
+      }else{
+        const nt = it.notes[0];
+        const y = yBass(nt.pc, nt.oct);
+        svgParts.push(drawNote(x, y, it.dur, "bass"));
+        svgParts.push(leftExtras(it, x));
+        svgParts.push(leftAnchor(x, y, li));
+      }
+      li++;
+    }
 
     svgParts.push('<line class="barline" x1="'+r1(x0)+'" y1="'+TREBLE_TOP+'" x2="'+r1(x0)+'" y2="'+(TREBLE_TOP+40)+'"/>');
     svgParts.push('<line class="barline" x1="'+r1(x0)+'" y1="'+BASS_TOP+'" x2="'+r1(x0)+'" y2="'+(BASS_TOP+40)+'"/>');
 
-    svgParts.push('<rect class="bar-hit" data-bar="'+bi+'" x="'+r1(x0)+'" y="30" width="'+r1(barW)+'" height="148"/>');
+    svgParts.push('<rect class="bar-hit" data-bar="'+bi+'" x="'+r1(x0)+'" y="30" width="'+r1(barW)+'" height="'+(HL_H+3)+'"/>');
 
     /* 老師確認勾選（畫在最上層，才點得到） */
     const done = doneBars(song.id).indexOf(bi) >= 0;
-    const ckx = x0 + barW - 14, cky = 198;
-    svgParts.push('<rect class="bar-done'+(done?' on':'')+'" data-donebar="'+bi+'" x="'+r1(x0+2)+'" y="30" width="'+r1(barW-4)+'" height="145" rx="6"/>');
+    const ckx = x0 + barW - 14, cky = CK_Y;
+    svgParts.push('<rect class="bar-done'+(done?' on':'')+'" data-donebar="'+bi+'" x="'+r1(x0+2)+'" y="30" width="'+r1(barW-4)+'" height="'+HL_H+'" rx="6"/>');
     svgParts.push(
       '<g class="bar-check'+(done?' on':'')+'" data-check="'+bi+'" role="button" tabindex="0" aria-pressed="'+done+'" aria-label="第 '+(bi+1)+' 小節老師確認">' +
       '<circle cx="'+r1(ckx)+'" cy="'+cky+'" r="11" class="ck-hit"/>' +
@@ -1234,7 +1328,7 @@ function circleNum(n){
 function drawNote(x, y, dur, clef, opt){
   const g = [];
   const hollow = dur >= 2;
-  const hasStem = dur < 4;
+  const hasStem = dur < 4 && !(opt && opt.noStem);
 
   const topY = clef === "treble" ? TREBLE_TOP : BASS_TOP;
   const botY = topY + 40;
@@ -1254,7 +1348,7 @@ function drawNote(x, y, dur, clef, opt){
 
   if(hasStem){
     /* opt：連尾線（beam）時，由外面指定符桿方向與符桿尖端，並且不畫旗子 */
-    const up = (opt && typeof opt.stemUp === "boolean") ? opt.stemUp : y > (clef === "treble" ? 58 : 140);
+    const up = (opt && typeof opt.stemUp === "boolean") ? opt.stemUp : y > (clef === "treble" ? TREBLE_TOP + 20 : BASS_TOP + 20);
     const sx = up ? x + 4.6 : x - 4.6;
     const sy = (opt && typeof opt.tip === "number") ? opt.tip : (up ? y - 30 : y + 30);
     g.push('<line class="stem" x1="'+r1(sx)+'" y1="'+r1(y)+'" x2="'+r1(sx)+'" y2="'+r1(sy)+'"/>');
@@ -1289,6 +1383,7 @@ function renderScore(){
   scoreEls.noteList = [];
   scoreEls.noteMap.clear();
 
+  setLayout(!!song.hasArp);
   const parts = [];
   for(let li=0; li<lines; li++){
     const first = li*perLine;
@@ -1716,25 +1811,35 @@ function scheduleRound(musicStart, beat, countInStart, countInBeats, fromBar){
     });
 
     chordList.forEach(function(ch, ci){
-      const tC = tBar + ci*segLen*beat;
-      const segEnd = tC + segLen*beat;
-      const info = chordMidi(ch);
+      scheduleAccomp(ch, tBar + ci*segLen*beat, beat);
+    });
 
-      let leftEnd = segEnd;
-      if(state.sustain) leftEnd = segEnd + 0.25;
-
-      info.tones.forEach(function(m, k){
-        pianoNote(m, tC, leftEnd - tC + (k===0?0.15:0), audio.chord);
-      });
-
-      const ev = {
-        t: tC, end: leftEnd, midi: info.tones[0], hand:"left",
-        bar: bi, idx: ci, fing: LEFT_FINGER[ch] || 5,
-        pc: ch, chord: ch
-      };
-      round.events.push(ev);
-
-      scheduleAccomp(ch, tC, beat);
+    bar.leftItems.forEach(function(it, li){
+      const tI = tBar + it.beat*beat;
+      const iEnd = tI + it.dur*beat;
+      const ch = it.chord;
+      if(it.legacy){
+        const info = chordMidi(ch);
+        const leftEnd = state.sustain ? iEnd + 0.25 : iEnd;
+        info.tones.forEach(function(m, k){
+          pianoNote(m, tI, leftEnd - tI + (k===0?0.15:0), audio.chord);
+        });
+        round.events.push({
+          t: tI, end: leftEnd, midi: info.tones[0], hand:"left",
+          bar: bi, idx: li, fing: LEFT_FINGER[ch] || 5, pc: ch, chord: ch
+        });
+      }else{
+        /* 琶音：每個音各自發聲；開踏板時留到這個和弦結束 */
+        const segEnd = tBar + (Math.floor(it.beat / segLen + 1e-9) + 1) * segLen * beat;
+        const noteEnd = state.sustain ? Math.max(iEnd, segEnd) + 0.25 : iEnd + 0.05;
+        it.notes.forEach(function(nt){ pianoNote(nt.midi, tI, noteEnd - tI, audio.chord); });
+        round.events.push({
+          t: tI, end: iEnd, midi: it.notes[0].midi, hand:"left",
+          bar: bi, idx: li, fing: it.notes[0].f, pc: it.notes[0].pc, chord: ch,
+          fings: it.notes.map(function(nt){ return nt.f; }),
+          pcs: it.notes.map(function(nt){ return nt.pc; })
+        });
+      }
     });
 
     round.bars.push(barObj);
@@ -1946,23 +2051,25 @@ function updatePlaybackVisual(now){
     }
   }
 
-  let curNote = null;
+  let curNote = null, curLeft = null;
   let nextNote = null;
   for(let i=0;i<curRound.events.length;i++){
     const ev = curRound.events[i];
     if(ev.type === "count") continue;
     if(now >= ev.t && now < ev.end){
+      if(ev.hand === "left"){ curLeft = ev; }
       if(!curNote || ev.hand === "right") curNote = ev;
     }
     if(ev.t > now && !nextNote) nextNote = ev;
   }
+  const curRight = (curNote && curNote.hand === "right") ? curNote : null;
 
   scoreEls.noteList.forEach(function(n){ n.classList.remove("is-on"); });
-  if(curNote){
-    const key = curNote.hand + "-" + curNote.bar + "-" + curNote.idx;
-    const g = scoreEls.noteMap.get(key);
+  [curRight, curLeft].forEach(function(ev){
+    if(!ev) return;
+    const g = scoreEls.noteMap.get(ev.hand + "-" + ev.bar + "-" + ev.idx);
     if(g) g.classList.add("is-on");
-  }
+  });
 
   keyEls.forEach(function(el){ el.classList.remove("pressed","hint"); });
 
@@ -1970,9 +2077,11 @@ function updatePlaybackVisual(now){
     const el = keyEls.get(midiToName(curNote.midi));
     if(el) el.classList.add("pressed");
   }
-  if(curNote && curNote.hand === "left"){
-    const el = keyEls.get(curNote.pc + "4");
-    if(el) el.classList.add("pressed");
+  if(curLeft && !curRight){
+    (curLeft.pcs || [curLeft.pc]).forEach(function(pc){
+      const el = keyEls.get(pc + "4");
+      if(el) el.classList.add("pressed");
+    });
   }
   if(nextNote && nextNote.hand === "right"){
     const el = keyEls.get(midiToName(nextNote.midi));
@@ -1994,10 +2103,8 @@ function updatePlaybackVisual(now){
   document.getElementById("ncNext").textContent = "下一個：" + cname(nextChord);
 
   clearHands();
-  if(curNote){
-    if(curNote.hand === "right") setFinger("R", curNote.fing);
-    else setFinger("L", curNote.fing);
-  }
+  if(curRight) setFinger("R", curRight.fing);
+  if(curLeft) (curLeft.fings || [curLeft.fing]).forEach(function(f){ setFinger("L", f); });
 }
 
 function chordForBar(barIndex, now, round){
