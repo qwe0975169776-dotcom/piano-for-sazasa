@@ -1,0 +1,2388 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>雙手鍵盤教室</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=LXGW+WenKai+TC:wght@400;700&family=Noto+Sans+TC:wght@400;500;700&family=Noto+Music&display=swap" rel="stylesheet">
+<style>
+/* ============ 主題色 ============ */
+:root{
+  --do:#e11d48; --re:#ea580c; --mi:#b45309; --fa:#16a34a;
+  --sol:#2563eb; --la:#7c3aed; --si:#db2777;
+
+  --bg:#fbf7ef;
+  --bg2:#f2ece0;
+  --panel:#ffffff;
+  --panel2:#f8f4ec;
+  --text:#20242e;
+  --muted:#6b7280;
+  --line:#e2dacb;
+  --staff:#3a3a3a;
+  --staff-soft:#c9c1b1;
+  --accent:#2563eb;
+  --accent-soft:#dbeafe;
+  --glow:#f59e0b;
+  --bar-hl:#eef3ff;
+  --key-white:#ffffff;
+  --key-white-edge:#c9c1b1;
+  --key-black:#2b2b33;
+  --key-press:#fbbf24;
+  --shadow:0 2px 10px rgba(60,50,30,.10);
+  --radius:14px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --do:#fb7185; --re:#fb923c; --mi:#fbbf24; --fa:#4ade80;
+    --sol:#60a5fa; --la:#a78bfa; --si:#f472b6;
+    --bg:#14161c; --bg2:#1b1e26; --panel:#1f232c; --panel2:#252a34;
+    --text:#e8e9ee; --muted:#9aa3b2; --line:#343a46;
+    --staff:#d6d9e0; --staff-soft:#4a5260;
+    --accent:#60a5fa; --accent-soft:#1e3a5f; --glow:#fbbf24;
+    --bar-hl:#232c3d; --key-white:#e9ecf2; --key-white-edge:#565f6e;
+    --key-black:#12151b; --key-press:#fbbf24;
+    --shadow:0 2px 12px rgba(0,0,0,.45);
+  }
+}
+:root[data-theme="dark"]{
+  --do:#fb7185; --re:#fb923c; --mi:#fbbf24; --fa:#4ade80;
+  --sol:#60a5fa; --la:#a78bfa; --si:#f472b6;
+  --bg:#14161c; --bg2:#1b1e26; --panel:#1f232c; --panel2:#252a34;
+  --text:#e8e9ee; --muted:#9aa3b2; --line:#343a46;
+  --staff:#d6d9e0; --staff-soft:#4a5260;
+  --accent:#60a5fa; --accent-soft:#1e3a5f; --glow:#fbbf24;
+  --bar-hl:#232c3d; --key-white:#e9ecf2; --key-white-edge:#565f6e;
+  --key-black:#12151b; --key-press:#fbbf24;
+  --shadow:0 2px 12px rgba(0,0,0,.45);
+}
+
+/* ============ 基本 ============ */
+*,*::before,*::after{ box-sizing:border-box; }
+html,body{ max-width:100%; }
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--text);
+  font-family:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+  font-size:15px;
+  line-height:1.6;
+  overflow-x:hidden;
+  -webkit-text-size-adjust:100%;
+  padding-bottom:8px;
+}
+h1,h2,h3{ font-family:"LXGW WenKai TC","Noto Sans TC",serif; margin:0; line-height:1.3; }
+button{ font-family:inherit; font-size:inherit; color:inherit; }
+:focus-visible{
+  outline:3px solid var(--accent);
+  outline-offset:2px;
+  border-radius:8px;
+}
+
+/* ============ 標題 ============ */
+.app-header{
+  display:flex; align-items:flex-start; justify-content:space-between;
+  gap:12px; flex-wrap:wrap;
+  padding:16px 16px 10px;
+  max-width:1100px; margin:0 auto;
+}
+.app-header h1{ font-size:clamp(22px,5vw,30px); letter-spacing:.04em; }
+.subtitle{ margin:4px 0 0; color:var(--muted); font-size:13px; }
+.solfege-strip{ display:flex; gap:4px; flex-wrap:wrap; }
+.solfege-strip .sf{
+  display:inline-block; padding:3px 8px; border-radius:999px;
+  font-size:11px; font-weight:700; color:#fff;
+  background:var(--c); letter-spacing:.03em;
+  white-space:nowrap;
+}
+
+/* ============ 版面 ============ */
+main{ max-width:1100px; margin:0 auto; padding:0 16px 20px; }
+.card{
+  background:var(--panel);
+  border:1px solid var(--line);
+  border-radius:var(--radius);
+  padding:14px;
+  margin-bottom:14px;
+  box-shadow:var(--shadow);
+}
+.card > h2{ font-size:16px; margin-bottom:10px; }
+
+/* ============ 選曲卡 ============ */
+.song-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:10px; }
+@media (max-width:640px){ .song-grid{ grid-template-columns:repeat(2,1fr); } }
+.song-card{
+  display:flex; flex-direction:column; gap:6px; align-items:flex-start;
+  background:var(--panel2);
+  border:2px solid var(--line);
+  border-radius:12px;
+  padding:10px 12px;
+  cursor:pointer;
+  text-align:left;
+  transition:border-color .15s, background .15s, transform .12s;
+  min-height:88px;
+}
+.song-card:hover{ transform:translateY(-1px); }
+.song-card[aria-pressed="true"]{
+  border-color:var(--accent);
+  background:var(--accent-soft);
+}
+.sc-title{ font-family:"LXGW WenKai TC",serif; font-weight:700; font-size:15px; }
+.sc-stars{ color:#f59e0b; font-size:13px; letter-spacing:1px; }
+.sc-chords{ display:flex; gap:4px; flex-wrap:wrap; }
+.ch-chip{
+  font-style:normal; font-size:11px; font-weight:700; color:#fff;
+  background:var(--c); border-radius:6px; padding:1px 7px;
+}
+
+/* 課程分組 */
+.lessons{ display:flex; flex-direction:column; gap:12px; }
+.lesson{ display:grid; grid-template-columns:230px minmax(0,1fr); gap:12px; align-items:start;
+  border-top:1px dashed var(--line); padding-top:12px; }
+.lesson:first-child{ border-top:none; padding-top:0; }
+.lesson-head h3{ font-size:15px; color:var(--accent); }
+.lesson-head p{ margin:2px 0 0; font-size:13px; color:var(--muted); }
+.lesson .song-grid{ grid-template-columns:repeat(auto-fill, minmax(170px, 1fr)); }
+@media (max-width:640px){
+  .lesson{ grid-template-columns:1fr; gap:6px; }
+  .lesson .song-grid{ grid-template-columns:repeat(2, minmax(0,1fr)); }
+}
+.sc-prog{ font-size:11px; font-weight:700; color:var(--fa); }
+.sc-prog.full{ color:#fff; background:var(--fa); border-radius:6px; padding:1px 7px; }
+.problems{ border-color:var(--do); color:var(--text); font-size:13px; }
+.problems b{ color:var(--do); }
+.problems ul{ margin:6px 0 0; padding-left:1.2em; }
+
+/* 老師確認 */
+.teacher-row{ display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-bottom:4px; }
+.teacher-row input[type=text]{
+  font-family:inherit; font-size:14px; color:var(--text); width:8em;
+  background:var(--panel2); border:2px solid var(--line); border-radius:10px; padding:5px 8px;
+}
+.progress-info{ font-size:13px; color:var(--muted); }
+.progress-info b{ color:var(--fa); }
+.teacher-actions{ display:flex; gap:6px; margin-left:auto; flex-wrap:wrap; }
+.btn.warn{ background:var(--do); border-color:var(--do); color:#fff; }
+.teacher-hint{ margin:0 0 8px; font-size:12px; color:var(--muted); }
+.lesson-goal{ flex-basis:100%; color:var(--text); }
+.lesson-goal b{ color:var(--accent); }
+
+/* ============ 控制區 ============ */
+.ctrl-row{ display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-bottom:10px; }
+.btn{
+  border:2px solid var(--line);
+  background:var(--panel2);
+  border-radius:10px;
+  padding:8px 14px;
+  cursor:pointer;
+  font-weight:500;
+  transition:background .15s, border-color .15s, color .15s;
+  white-space:nowrap;
+}
+.btn:hover{ border-color:var(--accent); }
+.btn[aria-pressed="true"]{
+  background:var(--accent);
+  border-color:var(--accent);
+  color:#fff;
+}
+.btn.primary{ font-weight:700; }
+.btn.small{ padding:5px 10px; font-size:13px; }
+.btn:disabled{ opacity:.4; cursor:not-allowed; }
+
+label.field{ display:flex; align-items:center; gap:8px; font-size:13px; color:var(--muted); }
+input[type=range]{ accent-color:var(--accent); }
+select{
+  font-family:inherit; font-size:14px; color:var(--text);
+  background:var(--panel2); border:2px solid var(--line);
+  border-radius:10px; padding:6px 8px;
+}
+.value-tag{
+  display:inline-block; min-width:56px; text-align:center;
+  font-weight:700; color:var(--text);
+  background:var(--panel2); border-radius:8px; padding:2px 8px;
+  font-variant-numeric:tabular-nums;
+}
+
+.range-row{ display:flex; flex-wrap:wrap; gap:6px; align-items:center; }
+.range-info{ font-size:13px; color:var(--muted); margin-top:6px; }
+.range-info b{ color:var(--accent); }
+
+.mode-row{ display:flex; flex-wrap:wrap; gap:6px; margin-top:4px; }
+
+.ladder-info{ font-size:13px; color:var(--muted); }
+.ladder-info b{ color:var(--accent); }
+select:disabled{ opacity:.45; }
+
+/* 聲部開關 */
+.voice-row{ display:flex; flex-wrap:wrap; gap:6px; }
+
+/* ============ 混音台 ============ */
+.mixer{
+  display:grid; grid-template-columns:repeat(6,1fr); gap:8px;
+  background:var(--panel2); border-radius:12px; padding:10px;
+}
+@media (max-width:640px){ .mixer{ grid-template-columns:repeat(3,1fr); } }
+.mixer .ch{ display:flex; flex-direction:column; align-items:center; gap:4px; }
+.mixer .ch-name{
+  font-size:11px; background:none; border:none; cursor:pointer;
+  padding:2px 6px; border-radius:6px; color:var(--muted);
+  font-weight:700; white-space:nowrap;
+}
+.mixer .ch-name.muted{ color:#fff; background:#ef4444; text-decoration:line-through; }
+.mixer input[type=range]{
+  writing-mode:vertical-lr; direction:rtl;
+  width:24px; height:86px; accent-color:var(--accent);
+  padding:0; margin:0;
+}
+.mixer .ch-val{ font-size:11px; color:var(--muted); font-variant-numeric:tabular-nums; }
+.switch-line{ display:flex; align-items:center; gap:8px; margin-top:10px; font-size:13px; }
+.switch{
+  position:relative; width:46px; height:26px; border-radius:999px;
+  border:2px solid var(--line); background:var(--panel2); cursor:pointer;
+  padding:0; flex:0 0 auto;
+}
+.switch::after{
+  content:""; position:absolute; top:2px; left:2px; width:18px; height:18px;
+  border-radius:50%; background:var(--muted); transition:left .16s, background .16s;
+}
+.switch[aria-pressed="true"]{ background:var(--accent); border-color:var(--accent); }
+.switch[aria-pressed="true"]::after{ left:22px; background:#fff; }
+
+/* ============ 樂譜 ============ */
+.score-meta{
+  display:flex; flex-wrap:wrap; gap:6px 14px; font-size:13px;
+  color:var(--muted); margin-bottom:8px; align-items:center;
+}
+.score-meta .tag{
+  background:var(--panel2); border-radius:8px; padding:2px 8px; color:var(--text);
+}
+.score-wrap{ width:100%; overflow:hidden; }
+.score-svg{ display:block; width:100%; height:auto; touch-action:manipulation; }
+
+/* SVG 內部樣式 */
+.staff-line{ stroke:var(--staff-soft); stroke-width:1; }
+.ledger-line{ stroke:var(--staff); stroke-width:1.4; }
+.barline{ stroke:var(--staff); stroke-width:1.2; }
+.clef{ font-family:"Noto Music","Noto Sans TC",serif; fill:var(--staff); }
+.note-head{ fill:var(--staff); }
+.note-head.open{ fill:none; stroke:var(--staff); stroke-width:1.5; }
+.stem{ stroke:var(--staff); stroke-width:1.5; stroke-linecap:round; }
+.flag{ stroke:var(--staff); stroke-width:1.6; fill:none; stroke-linecap:round; }
+.dot-note{ fill:var(--staff); }
+.fing-text{
+  font-family:"Noto Sans TC",sans-serif; font-size:9px; font-weight:700;
+  fill:var(--muted); paint-order:stroke; stroke:var(--panel); stroke-width:2.5px;
+  stroke-linejoin:round;
+}
+.bar-num{ font-family:"Noto Sans TC",sans-serif; font-size:9px; fill:var(--muted); }
+.solfege-pill{
+  font-family:"Noto Sans TC",sans-serif; font-size:9px; font-weight:700;
+  fill:#fff;
+}
+.chord-pill{ font-family:"Noto Sans TC",sans-serif; font-size:10px; font-weight:700; fill:#fff; }
+.left-label{
+  font-family:"Noto Sans TC",sans-serif; font-size:9.5px; font-weight:700;
+  fill:var(--text);
+}
+.bar-hit{ fill:transparent; cursor:pointer; }
+.beat-guide{ stroke:var(--staff-soft); stroke-width:1; stroke-dasharray:2 3; opacity:.55; pointer-events:none; }
+.bar-done{ fill:var(--fa); opacity:0; pointer-events:none; }
+.bar-done.on{ opacity:.10; }
+.bar-check{ cursor:pointer; }
+.bar-check .ck-hit{ fill:transparent; }
+.bar-check .ck-ring{ fill:var(--panel); stroke:var(--staff-soft); stroke-width:1.6; }
+.bar-check .ck-mark{ fill:none; stroke:var(--staff-soft); stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+.bar-check:hover .ck-ring{ stroke:var(--fa); }
+.bar-check.on .ck-ring{ fill:var(--fa); stroke:var(--fa); }
+.bar-check.on .ck-mark{ stroke:#fff; }
+.bar-check:focus-visible{ outline:none; }
+.bar-check:focus-visible .ck-ring{ stroke:var(--accent); stroke-width:3; }
+.rest-block{ fill:var(--staff); }
+.rest-glyph{ font-family:"Noto Music","Segoe UI Symbol",serif; fill:var(--staff); }
+.rest-label{ font-family:"Noto Sans TC",sans-serif; font-size:9px; font-weight:700; fill:var(--muted); }
+.bar-hit:hover{ fill:rgba(37,99,235,.06); }
+.bar-hl{ fill:var(--bar-hl); opacity:0; pointer-events:none; transition:opacity .12s; }
+.bar-hl.on{ opacity:1; }
+.sel-rect{
+  fill:none; stroke:var(--accent); stroke-width:2;
+  stroke-dasharray:6 4; pointer-events:none;
+}
+.note-group{ transition:filter .1s; }
+.note-group.is-on{ filter:drop-shadow(0 0 6px var(--glow)) drop-shadow(0 0 2px var(--glow)); }
+.note-group.is-on .note-head,
+.note-group.is-on .note-head.open{ fill:var(--glow); stroke:var(--glow); }
+.note-group.is-on .stem,
+.note-group.is-on .flag{ stroke:var(--glow); }
+
+/* ============ 鍵盤 ============ */
+.sticky-footer{
+  position:sticky; bottom:0; z-index:50;
+  background:linear-gradient(to top, var(--bg) 72%, transparent);
+  padding:6px 16px 8px;
+  max-width:1100px; margin:0 auto;
+}
+.kb-shell{
+  display:flex; gap:10px; align-items:flex-end;
+  background:var(--panel);
+  border:1px solid var(--line);
+  border-radius:14px;
+  padding:8px;
+  box-shadow:0 -2px 18px rgba(40,30,10,.12);
+}
+@media (max-width:520px){
+  .sticky-footer{ padding:6px 16px 6px; }
+  .kb-shell{ gap:6px; padding:6px; }
+}
+.now-chord{
+  flex:0 0 130px;
+  background:var(--panel2);
+  border-radius:10px;
+  padding:6px 8px;
+  text-align:center;
+  min-height:96px;
+  display:flex; flex-direction:column; justify-content:center; gap:2px;
+}
+@media (max-width:520px){ .now-chord{ flex:0 0 104px; padding:5px 6px; } }
+.nc-label{ font-size:10px; color:var(--muted); letter-spacing:.06em; }
+.nc-value{
+  font-family:"LXGW WenKai TC",serif; font-weight:700;
+  font-size:clamp(24px,7vw,34px); line-height:1.05;
+  color:var(--accent);
+}
+.nc-left{ font-size:12px; font-weight:700; color:var(--text); }
+.nc-next{ font-size:10px; color:var(--muted); }
+
+.kb-main{ flex:1 1 auto; min-width:0; }
+.zone-row{ display:flex; font-size:10px; color:var(--muted); font-weight:700; padding:0 2px 3px; }
+.zone-row span:first-child{ flex:0 0 43%; }
+.zone-row span:last-child{ flex:1 1 auto; text-align:right; }
+
+.keys{ position:relative; display:flex; width:100%; height:86px; }
+@media (max-width:520px){ .keys{ height:66px; } }
+.wkey{
+  flex:1 1 0; min-width:0;
+  position:relative;
+  background:linear-gradient(to bottom, var(--key-white), var(--key-white) 82%, #e6e6e6);
+  border:1px solid var(--key-white-edge);
+  border-radius:0 0 6px 6px;
+  margin-right:-1px;
+  display:flex; flex-direction:column; justify-content:space-between; align-items:center;
+  padding:4px 0 3px;
+  cursor:pointer;
+  transition:background .08s, transform .08s;
+  user-select:none;
+  -webkit-tap-highlight-color:transparent;
+}
+:root[data-theme="dark"] .wkey{
+  background:linear-gradient(to bottom, #eef1f6, #dfe3ea 82%, #c9cdd5);
+}
+.wkey:last-child{ margin-right:0; }
+.wkey.pressed{
+  background:linear-gradient(to bottom, var(--key-press), #f59e0b);
+}
+.wkey.hint{ box-shadow:0 0 0 3px var(--glow) inset; }
+.bkey{
+  position:absolute; top:0; height:60%;
+  background:linear-gradient(to bottom, #3a3a44, var(--key-black));
+  border-radius:0 0 5px 5px;
+  border:1px solid #000;
+  cursor:pointer;
+  z-index:2;
+  transition:background .08s;
+  -webkit-tap-highlight-color:transparent;
+}
+.bkey.pressed{ background:linear-gradient(to bottom, #f59e0b, #b45309); }
+.bkey.hint{ box-shadow:0 0 0 3px var(--glow) inset; }
+
+.wk-left{
+  font-size:9px; font-weight:700; color:#fff; border-radius:6px;
+  padding:0 4px; line-height:14px; background:var(--c,var(--muted));
+  opacity:0; pointer-events:none;
+}
+.wk-left.show{ opacity:1; }
+.wk-finger{
+  font-size:12px; font-weight:700; color:#5b6472; line-height:1;
+}
+@media (max-width:520px){
+  .wk-finger{ font-size:10px; }
+  .wk-left{ font-size:8px; line-height:12px; padding:0 3px; }
+}
+
+/* 手指示意 */
+.hands{ display:flex; gap:8px; margin-top:6px; }
+.hand{
+  flex:1 1 0;
+  display:flex; justify-content:center; gap:3px;
+  background:var(--panel2);
+  border-radius:10px; padding:4px 6px;
+  min-width:0;
+}
+.hand .hlabel{
+  font-size:9px; color:var(--muted); writing-mode:horizontal-tb;
+  align-self:center; margin-right:2px; white-space:nowrap;
+}
+.finger{
+  width:20px; height:20px; border-radius:6px;
+  background:var(--line); color:var(--muted);
+  font-size:10px; font-weight:700;
+  display:flex; align-items:center; justify-content:center;
+  transition:transform .1s, background .1s, color .1s;
+  flex:0 0 auto;
+}
+@media (max-width:520px){ .finger{ width:16px; height:16px; font-size:9px; border-radius:5px; } }
+.finger.up{
+  background:var(--glow); color:#3a2500;
+  transform:translateY(-5px);
+}
+
+/* ============ 摺疊區 ============ */
+details.card > summary{
+  cursor:pointer; font-family:"LXGW WenKai TC",serif; font-weight:700;
+  font-size:15px; list-style:none;
+}
+details.card > summary::-webkit-details-marker{ display:none; }
+details.card > summary::before{ content:"▸ "; color:var(--accent); }
+details.card[open] > summary::before{ content:"▾ "; }
+.tips-body{ margin-top:10px; font-size:14px; }
+.tips-body h3{ font-size:14px; margin:12px 0 4px; color:var(--accent); }
+.tips-body ul{ margin:4px 0; padding-left:1.2em; }
+.tips-body li{ margin:3px 0; }
+
+/* ============ 減少動態 ============ */
+@media (prefers-reduced-motion: reduce){
+  *{ transition-duration:.001ms !important; animation-duration:.001ms !important; }
+  html{ scroll-behavior:auto !important; }
+}
+</style>
+</head>
+<body>
+
+<header class="app-header">
+  <div class="title-wrap">
+    <h1>雙手鍵盤教室</h1>
+    <p class="subtitle">右手彈旋律，左手按一個鍵換和弦，一起來合奏！</p>
+  </div>
+  <div class="solfege-strip" id="solfegeStrip"></div>
+</header>
+
+<main>
+  <div class="card problems" id="songProblems" role="alert" hidden></div>
+
+  <!-- 選曲 -->
+  <section class="card" aria-labelledby="songsTitle">
+    <h2 id="songsTitle">課程與曲子</h2>
+    <div class="lessons" id="songGrid"></div>
+  </section>
+
+  <!-- 播放控制 -->
+  <section class="card" aria-labelledby="ctrlTitle">
+    <h2 id="ctrlTitle">播放控制</h2>
+
+    <div class="ctrl-row">
+      <button class="btn primary" id="btnOnce" aria-pressed="false">▶ 播放一次</button>
+      <button class="btn primary" id="btnLoop" aria-pressed="false">🔁 一直循環</button>
+      <button class="btn" id="btnPause" aria-pressed="false" disabled>⏸ 暫停</button>
+      <button class="btn" id="btnFollow" aria-pressed="true" title="播放時自動捲動樂譜">📍 跟隨樂譜</button>
+    </div>
+
+    <div class="ctrl-row">
+      <label class="field" for="bpmRange">速度</label>
+      <input type="range" id="bpmRange" min="50" max="120" step="1" value="72" style="flex:1 1 140px;max-width:260px;">
+      <span class="value-tag" id="bpmValue">♩ = 72</span>
+    </div>
+
+    <div class="ctrl-row">
+      <button class="btn small" id="btnLadder" aria-pressed="false">🪜 速度階梯</button>
+      <label class="field" for="ladderStep">每遍加</label>
+      <select id="ladderStep"><option value="2">2</option><option value="4">4</option><option value="6">6</option><option value="8">8</option></select>
+      <label class="field" for="ladderMax">最快到</label>
+      <select id="ladderMax"></select>
+      <span class="ladder-info" id="ladderInfo"></span>
+    </div>
+
+    <div class="ctrl-row">
+      <label class="field" for="rhythmSel">伴奏節奏</label>
+      <select id="rhythmSel">
+        <option value="march">進行曲（蹦恰蹦恰）</option>
+        <option value="lyric">抒情（分解和弦）</option>
+        <option value="pop">流行（8 Beat）</option>
+      </select>
+    </div>
+
+    <div class="ctrl-row" style="align-items:flex-start;">
+      <span class="field" style="flex:0 0 auto;">練習段落</span>
+      <div style="flex:1 1 auto;min-width:0;">
+        <div class="range-row" id="rangeRow"></div>
+        <div class="range-info" id="rangeInfo"></div>
+      </div>
+    </div>
+
+    <div class="ctrl-row">
+      <span class="field" style="flex:0 0 auto;">練習模式</span>
+      <div class="mode-row" id="modeRow"></div>
+    </div>
+
+    <div class="ctrl-row">
+      <span class="field" style="flex:0 0 auto;">網頁聲音</span>
+      <div class="voice-row" id="voiceRow"></div>
+    </div>
+
+    <div class="switch-line">
+      <button class="switch" id="sustainSw" aria-pressed="true" aria-label="延音踏板"></button>
+      <span>延音踏板 Sustain</span>
+    </div>
+
+    <div class="mixer" id="mixer" style="margin-top:10px;"></div>
+  </section>
+
+  <!-- 樂譜 -->
+  <section class="card" aria-labelledby="scoreTitle">
+    <h2 id="scoreTitle">樂譜</h2>
+    <div class="teacher-row">
+      <label class="field" for="studentSel">學生</label>
+      <select id="studentSel"></select>
+      <input id="newStudent" type="text" maxlength="20" placeholder="輸入名字" aria-label="新增學生名字">
+      <button class="btn small" id="btnAddStudent">新增</button>
+      <span class="progress-info" id="progressInfo"></span>
+      <span class="teacher-actions">
+        <button class="btn small" id="btnClearDone">清除這首的勾選</button>
+        <button class="btn small" id="btnDelStudent">刪除這位學生</button>
+      </span>
+    </div>
+    <p class="teacher-hint">老師聽學生彈完一小節、確認沒問題，就點小節右下角的圓圈打勾。每位學生分開記錄，下次打開網頁還在。</p>
+    <div class="score-meta" id="scoreMeta"></div>
+    <div class="score-wrap" id="scoreWrap"></div>
+  </section>
+
+  <!-- 老師用摺疊區 -->
+  <details class="card">
+    <summary>電子琴自動伴奏設定小撇步（老師用）</summary>
+    <div class="tips-body">
+      <h3>一、開啟「單指和弦」模式</h3>
+      <ul>
+        <li>在電子琴上找到「自動伴奏」或「和弦模式」的按鈕，切換到「單指和弦」。這樣左手只要按一個鍵，就能彈出整個和弦。</li>
+        <li>如果電子琴只有「多指和弦」，也可以請學生按三個音，本頁的左手練習仍可先按一個鍵建立概念。</li>
+      </ul>
+      <h3>二、把速度設成跟本頁一樣</h3>
+      <ul>
+        <li>先在本頁把速度調到學生覺得舒服的數字，再按電子琴上的「速度」鍵把數字調成一樣，兩邊就會同步。</li>
+        <li>建議從 ♩ = 60～72 開始，熟練後再慢慢加快。</li>
+      </ul>
+      <h3>三、左手在分割點左邊按 Do、Fa、Sol</h3>
+      <ul>
+        <li>電子琴通常有一個「分割點」，分割點左邊是伴奏區。請學生把手放在分割點左邊。</li>
+        <li>左手只需要按三個位置：Do（C）、Fa（F）、Sol（G），手不需要移動，靠手指伸縮即可。</li>
+        <li>本頁的左手指法：Do 用第 ⑤ 指、Fa 用第 ② 指、Sol 用第 ① 指。</li>
+      </ul>
+      <h3>四、左手手型</h3>
+      <ul>
+        <li>手掌輕輕拱起，像握著一顆網球，手腕放鬆不要壓低。</li>
+        <li>按鍵時指尖出力，手指不要伸直拍打鍵盤。</li>
+        <li>換和弦時只要手指動，手腕幾乎不動，這樣速度才能穩定。</li>
+      </ul>
+      <h3>五、課堂流程建議</h3>
+      <ul>
+        <li>先用「聽示範」讓學生熟悉旋律與和弦的搭配。</li>
+        <li>再用「練右手」只聽旋律加節拍，讓學生跟著唱唱名。</li>
+        <li>接著「練左手」只聽和弦，感受換和弦的時機。</li>
+        <li>最後「配電子琴」關掉網頁聲音，學生在電子琴上實際雙手合奏，網頁只留節拍聲。</li>
+      </ul>
+    </div>
+  </details>
+
+</main>
+
+<!-- 固定鍵盤 -->
+<footer class="sticky-footer" id="stickyFooter">
+  <div class="kb-shell">
+    <div class="now-chord" id="nowChord">
+      <div class="nc-label">現在的和弦</div>
+      <div class="nc-value" id="ncValue">—</div>
+      <div class="nc-left" id="ncLeft">—</div>
+      <div class="nc-next" id="ncNext">下一個：—</div>
+    </div>
+    <div class="kb-main">
+      <div class="zone-row"><span>◀ 左手·和弦區</span><span>右手·旋律區 ▶</span></div>
+      <div class="keys" id="keys"></div>
+      <div class="hands">
+        <div class="hand" id="handL"><span class="hlabel">左手</span></div>
+        <div class="hand" id="handR"><span class="hlabel">右手</span></div>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script>
+(function(){
+"use strict";
+
+const NS = "http://www.w3.org/2000/svg";
+
+const SOLFEGE = {C:"Do", D:"Re", E:"Mi", F:"Fa", G:"Sol", A:"La", B:"Si"};
+const SOL_VAR = {C:"--do", D:"--re", E:"--mi", F:"--fa", G:"--sol", A:"--la", B:"--si"};
+const CHORD_VAR = {C:"--do", F:"--fa", G:"--sol"};
+const DEFAULT_FINGER = {C:1, D:2, E:3, F:4, G:5, A:5, B:5};
+const LEFT_FINGER = {C:5, F:2, G:1};
+const SEMI = {C:0, D:2, E:4, F:5, G:7, A:9, B:11};
+
+/* ============ 課程與曲目 ============
+   每小節寫成「音高 拍值」：C4 1 = 四分音符 Do。
+   拍值：1 四分、0.5 八分、2 二分、1.5 附點四分、3 附點二分、4 全音符。
+   休止符寫 R，例如 R 1 = 四分休止符。
+   指定指法：在音高後面加 /數字，例如 G4/4 = Sol 用 4 指。
+   左手和弦：一小節一個寫 "C"，兩個寫 "F|C"。 */
+const LESSONS = [
+  { title:"第 1 課 · 只用 C 和弦", goal:"右手五指 Do 到 Sol 上下走，認識休止符；左手一直按 Do（⑤）。", songs:["warmup"] },
+  { title:"第 2 課 · C 和 G 換和弦", goal:"左手在 Do ⑤ 和 Sol ① 之間換，右手留在 C 位置不移動。", songs:["mary","bee"] },
+  { title:"第 3 課 · 節奏變化", goal:"附點四分音符（長—短）和八分音符（兩個一拍）。", songs:["ode","tiger"] },
+  { title:"第 4 課 · 右手伸展到 La", goal:"大拇指留在 Do，小指伸到 La；4 指彈 Sol。", songs:["puppy"] },
+  { title:"第 5 課 · 加入 F 和弦", goal:"左手食指 ② 按 Fa，C、F、G 三個和弦輪流換。", songs:["star","spring"] }
+];
+
+const SONGS = [
+  {
+    id:"warmup", title:"五指爬樓梯（練習曲）", stars:1, chords:["C"],
+    bars:[
+      {r:"C4 1 D4 1 E4 1 F4 1", l:"C"},
+      {r:"G4 2 R 2",            l:"C"},
+      {r:"G4 1 F4 1 E4 1 D4 1", l:"C"},
+      {r:"C4 2 R 2",            l:"C"},
+      {r:"C4 1 E4 1 G4 2",      l:"C"},
+      {r:"G4 1 E4 1 C4 1 R 1",  l:"C"},
+      {r:"E4 1 D4 1 E4 1 D4 1", l:"C"},
+      {r:"C4 4",                l:"C"}
+    ]
+  },
+  {
+    id:"mary", title:"瑪莉有隻小綿羊", stars:1, chords:["C","G"],
+    bars:[
+      {r:"E4 1 D4 1 C4 1 D4 1", l:"C"},
+      {r:"E4 1 E4 1 E4 2",      l:"C"},
+      {r:"D4 1 D4 1 D4 2",      l:"G"},
+      {r:"E4 1 G4 1 G4 2",      l:"C"},
+      {r:"E4 1 D4 1 C4 1 D4 1", l:"C"},
+      {r:"E4 1 E4 1 E4 1 E4 1", l:"C"},
+      {r:"D4 1 D4 1 E4 1 D4 1", l:"G"},
+      {r:"C4 4",                l:"C"}
+    ]
+  },
+  {
+    id:"bee", title:"小蜜蜂", stars:1, chords:["C","G"],
+    bars:[
+      {r:"G4 1 E4 1 E4 2",      l:"C"},
+      {r:"F4 1 D4 1 D4 2",      l:"G"},
+      {r:"C4 1 D4 1 E4 1 F4 1", l:"C"},
+      {r:"G4 1 G4 1 G4 2",      l:"C"},
+      {r:"G4 1 E4 1 E4 2",      l:"C"},
+      {r:"F4 1 D4 1 D4 2",      l:"G"},
+      {r:"C4 1 E4 1 G4 1 G4 1", l:"C"},
+      {r:"C4 4",                l:"C"}
+    ]
+  },
+  {
+    id:"ode", title:"歡樂頌", stars:2, chords:["C","G"],
+    bars:[
+      {r:"E4 1 E4 1 F4 1 G4 1", l:"C"},
+      {r:"G4 1 F4 1 E4 1 D4 1", l:"G"},
+      {r:"C4 1 C4 1 D4 1 E4 1", l:"C"},
+      {r:"E4 1.5 D4 0.5 D4 2",  l:"G"},
+      {r:"E4 1 E4 1 F4 1 G4 1", l:"C"},
+      {r:"G4 1 F4 1 E4 1 D4 1", l:"G"},
+      {r:"C4 1 C4 1 D4 1 E4 1", l:"C"},
+      {r:"D4 1.5 C4 0.5 C4 2",  l:"C"}
+    ]
+  },
+  {
+    id:"tiger", title:"兩隻老虎", stars:2, chords:["C","G"],
+    bars:[
+      {r:"C4 1 D4 1 E4 1 C4 1", l:"C"},
+      {r:"C4 1 D4 1 E4 1 C4 1", l:"C"},
+      {r:"E4 1 F4 1 G4 2",      l:"C"},
+      {r:"E4 1 F4 1 G4 2",      l:"C"},
+      {r:"G4/4 0.5 A4/5 0.5 G4/4 0.5 F4/3 0.5 E4/2 1 C4/1 1", l:"C"},
+      {r:"G4/4 0.5 A4/5 0.5 G4/4 0.5 F4/3 0.5 E4/2 1 C4/1 1", l:"C"},
+      {r:"D4 1 G4 1 C4 2",      l:"G"},
+      {r:"D4 1 G4 1 C4 2",      l:"C"}
+    ]
+  },
+  {
+    id:"puppy", title:"哈巴狗", stars:2, chords:["C","G"],
+    bars:[
+      {r:"C4/1 1 C4/1 1 G4/4 1 G4/4 1", l:"C"},
+      {r:"A4/5 1 A4/5 1 G4/4 2",        l:"C"},
+      {r:"F4 1 F4 1 E4 1 E4 1",         l:"C"},
+      {r:"D4 1 D4 1 C4 2",              l:"G"},
+      {r:"G4 1 G4 1 F4 1 F4 1",         l:"C"},
+      {r:"E4 1 E4 1 D4 2",              l:"C"},
+      {r:"G4 1 G4 1 F4 1 F4 1",         l:"C"},
+      {r:"E4 1 E4 1 D4 2",              l:"G"},
+      {r:"C4/1 1 C4/1 1 G4/4 1 G4/4 1", l:"C"},
+      {r:"A4/5 1 A4/5 1 G4/4 2",        l:"C"},
+      {r:"F4 1 F4 1 E4 1 E4 1",         l:"C"},
+      {r:"D4 1 D4 1 C4 2",              l:"C"}
+    ]
+  },
+  {
+    id:"star", title:"小星星", stars:3, chords:["C","F","G"],
+    bars:[
+      {r:"C4/1 1 C4/1 1 G4/4 1 G4/4 1", l:"C"},
+      {r:"A4/5 1 A4/5 1 G4/4 2",        l:"F"},
+      {r:"F4 1 F4 1 E4 1 E4 1",         l:"C"},
+      {r:"D4 1 D4 1 C4 2",              l:"C"},
+      {r:"G4 1 G4 1 F4 1 F4 1",         l:"C"},
+      {r:"E4 1 E4 1 D4 2",              l:"C"},
+      {r:"G4 1 G4 1 F4 1 F4 1",         l:"C"},
+      {r:"E4 1 E4 1 D4 2",              l:"G"},
+      {r:"C4/1 1 C4/1 1 G4/4 1 G4/4 1", l:"C"},
+      {r:"A4/5 1 A4/5 1 G4/4 2",        l:"F"},
+      {r:"F4 1 F4 1 E4 1 E4 1",         l:"C"},
+      {r:"D4 1 D4 1 C4 2",              l:"C"}
+    ]
+  },
+  {
+    id:"spring", title:"春神來了", stars:2, chords:["C","F","G"],
+    bars:[
+      {r:"G4/4 1 G4/4 1 A4/5 1 G4/4 1", l:"C"},
+      {r:"E4 1 E4 1 D4 2",              l:"C"},
+      {r:"G4/4 1 G4/4 1 A4/5 1 G4/4 1", l:"C"},
+      {r:"E4 1 E4 1 D4 2",              l:"G"},
+      {r:"G4/4 1 G4/4 1 A4/5 1 G4/4 1", l:"C"},
+      {r:"E4 1 E4 1 D4 2",              l:"F"},
+      {r:"G4 1 E4 1 D4 1 E4 1",         l:"C"},
+      {r:"C4 4",                        l:"C"}
+    ]
+  }
+];
+
+/* 解析一小節；不認得的寫法放進 bad，給載入檢查用 */
+function parseBar(str){
+  const toks = str.trim().split(/\s+/);
+  const out = [], bad = [];
+  if(toks.length % 2) bad.push("「"+str+"」的音和拍值數量對不起來");
+  for(let i=0;i+1<toks.length;i+=2){
+    const raw = toks[i];
+    const dur = parseFloat(toks[i+1]);
+    if(!(dur > 0)){ bad.push("拍值「"+toks[i+1]+"」看不懂"); continue; }
+    if(/^R$/i.test(raw)){ out.push({rest:true, dur:dur}); continue; }
+    const parts = raw.split("/");
+    const m = /^([A-G])(#?)(\d)$/.exec(parts[0]);
+    if(!m){ bad.push("音高「"+raw+"」看不懂"); continue; }
+    out.push({
+      pc:m[1], acc:m[2]==="#", oct:parseInt(m[3],10),
+      dur: dur,
+      finger: parts[1] ? parseInt(parts[1],10) : null
+    });
+  }
+  return {notes:out, bad:bad};
+}
+const SONG_PROBLEMS = [];
+SONGS.forEach(function(s){
+  s.parsed = s.bars.map(function(b, bi){
+    const p = parseBar(b.r);
+    const where = "《"+s.title+"》第 "+(bi+1)+" 小節：";
+    p.bad.forEach(function(msg){ SONG_PROBLEMS.push(where + msg); });
+    const sum = p.notes.reduce(function(a,n){ return a + n.dur; }, 0);
+    if(Math.abs(sum - 4) > 1e-6) SONG_PROBLEMS.push(where + "右手共 "+sum+" 拍，應該是 4 拍");
+    p.notes.forEach(function(n){
+      if(n.rest) return;
+      if(n.oct !== 4 || n.acc) SONG_PROBLEMS.push(where + n.pc+(n.acc?"#":"")+n.oct+" 超出鍵盤範圍（Do4–Si4 白鍵）");
+    });
+    const left = b.l.split("|");
+    left.forEach(function(c){
+      if(!/^[CFG]$/.test(c)) SONG_PROBLEMS.push(where + "左手和弦「"+c+"」只能用 C、F、G");
+    });
+    return { right: p.notes, left: left };
+  });
+});
+
+const LS_KEY = "shuangshou-keyboard-v1";
+
+const state = {
+  song: 0,
+  bpm: 72,
+  rhythm: "march",
+  mode: "listen",
+  follow: true,
+  voices: { right:true, left:true, accomp:true, click:false },
+  mix: { melody:70, chord:65, accomp:55, drums:50, click:45, master:70 },
+  muted:{ melody:false, chord:false, accomp:false, drums:false, click:false, master:false },
+  sustain: true,
+  selA: null,
+  selB: null,
+  ladder: { on:false, step:4, max:100 }
+};
+
+/* ============ 老師確認：每位學生、每首曲子已練熟的小節 ============ */
+const PROG_KEY = "shuangshou-progress-v1";
+const progress = { students:["全班"], cur:"全班", done:{} };
+function loadProgress(){
+  try{
+    const o = JSON.parse(localStorage.getItem(PROG_KEY) || "null");
+    if(!o) return;
+    if(Array.isArray(o.students) && o.students.length) progress.students = o.students.filter(function(s){ return typeof s === "string" && s; });
+    if(!progress.students.length) progress.students = ["全班"];
+    if(typeof o.cur === "string" && progress.students.indexOf(o.cur) >= 0) progress.cur = o.cur;
+    else progress.cur = progress.students[0];
+    if(o.done && typeof o.done === "object") progress.done = o.done;
+  }catch(e){}
+}
+function saveProgress(){
+  try{ localStorage.setItem(PROG_KEY, JSON.stringify(progress)); }catch(e){}
+}
+function doneBars(songId){
+  const st = progress.done[progress.cur] || {};
+  return Array.isArray(st[songId]) ? st[songId] : [];
+}
+function toggleDone(songId, bi){
+  const st = progress.done[progress.cur] = progress.done[progress.cur] || {};
+  const list = Array.isArray(st[songId]) ? st[songId] : [];
+  const k = list.indexOf(bi);
+  if(k >= 0) list.splice(k, 1); else list.push(bi);
+  st[songId] = list;
+  saveProgress();
+}
+
+function loadState(){
+  try{
+    const raw = localStorage.getItem(LS_KEY);
+    if(!raw) return;
+    const o = JSON.parse(raw);
+    if(typeof o.bpm === "number") state.bpm = Math.min(120, Math.max(50, o.bpm));
+    if(typeof o.rhythm === "string") state.rhythm = o.rhythm;
+    if(typeof o.follow === "boolean") state.follow = o.follow;
+    if(o.mix && typeof o.mix === "object"){
+      Object.keys(state.mix).forEach(function(k){
+        if(typeof o.mix[k] === "number") state.mix[k] = Math.min(100, Math.max(0, o.mix[k]));
+      });
+    }
+    if(typeof o.sustain === "boolean") state.sustain = o.sustain;
+    if(o.ladder && typeof o.ladder === "object"){
+      if(typeof o.ladder.on === "boolean") state.ladder.on = o.ladder.on;
+      if(typeof o.ladder.step === "number") state.ladder.step = o.ladder.step;
+      if(typeof o.ladder.max === "number") state.ladder.max = o.ladder.max;
+    }
+    if(o.voices && typeof o.voices === "object"){
+      Object.keys(state.voices).forEach(function(k){
+        if(typeof o.voices[k] === "boolean") state.voices[k] = o.voices[k];
+      });
+    }
+  }catch(e){}
+}
+function saveState(){
+  try{
+    localStorage.setItem(LS_KEY, JSON.stringify({
+      bpm: state.bpm, rhythm: state.rhythm, follow: state.follow,
+      mix: state.mix, voices: state.voices, sustain: state.sustain,
+      ladder: state.ladder
+    }));
+  }catch(e){}
+}
+
+let ac = null;
+const audio = {};
+let noiseBuf = null;
+let activeSources = [];
+
+function initAudio(){
+  if(ac) return;
+  const Ctx = window.AudioContext || window.webkitAudioContext;
+  ac = new Ctx();
+  audio.master = ac.createGain();
+  audio.master.connect(ac.destination);
+  ["melody","chord","accomp","drums","click"].forEach(function(k){
+    const g = ac.createGain();
+    g.connect(audio.master);
+    audio[k] = g;
+  });
+  const len = Math.floor(ac.sampleRate * 0.6);
+  noiseBuf = ac.createBuffer(1, len, ac.sampleRate);
+  const d = noiseBuf.getChannelData(0);
+  for(let i=0;i<len;i++) d[i] = Math.random()*2 - 1;
+}
+function resumeAudio(){
+  if(!ac) initAudio();
+  if(ac.state === "suspended") ac.resume();
+}
+
+function midiToFreq(m){ return 440 * Math.pow(2, (m-69)/12); }
+function pitchToMidi(pc, oct){ return 12*(oct+1) + SEMI[pc]; }
+function volCurve(v){ return Math.pow(v/70, 2); }
+
+function applyMix(){
+  if(!ac) return;
+  function g(key, voice){
+    if(state.muted[key]) return 0;
+    if(voice !== undefined && !voice) return 0;
+    return volCurve(state.mix[key]);
+  }
+  audio.melody.gain.value = g("melody", state.voices.right);
+  audio.chord.gain.value  = g("chord",  state.voices.left);
+  audio.accomp.gain.value = g("accomp", state.voices.accomp);
+  audio.drums.gain.value  = g("drums");
+  audio.click.gain.value  = g("click",  state.voices.click);
+  audio.master.gain.value = g("master");
+}
+
+function trackSource(node, stopAt){
+  activeSources.push({node:node, stopAt:stopAt});
+  if(activeSources.length > 500) activeSources = activeSources.slice(-400);
+}
+function stopAllSources(){
+  const now = ac ? ac.currentTime : 0;
+  activeSources.forEach(function(s){
+    try{ s.node.stop(now); }catch(e){}
+  });
+  activeSources = [];
+}
+
+/* 鋼琴音：三個振盪器全部登記，暫停才會完全安靜 */
+function pianoNote(midi, t, dur, dest){
+  const f = midiToFreq(midi);
+  const o1 = ac.createOscillator(); o1.type = "triangle"; o1.frequency.value = f;
+  const o2 = ac.createOscillator(); o2.type = "sine";     o2.frequency.value = f*2;
+  const o3 = ac.createOscillator(); o3.type = "sine";     o3.frequency.value = f*3.01;
+
+  const g2 = ac.createGain(); g2.gain.value = 0.30;
+  const g3 = ac.createGain(); g3.gain.value = 0.09;
+
+  const flt = ac.createBiquadFilter();
+  flt.type = "lowpass";
+  flt.Q.value = 0.6;
+  flt.frequency.setValueAtTime(Math.min(7000, 2600 + f*3.2), t);
+  flt.frequency.exponentialRampToValueAtTime(Math.max(500, f*2.2), t + Math.max(0.35, dur*0.9));
+
+  const env = ac.createGain();
+  const peak = 0.20;
+  const a = t + 0.005;
+  const dEnd = t + 0.13;
+  const eEnd = t + Math.max(dur, 0.22);
+  const rEnd = eEnd + 0.32;
+
+  env.gain.setValueAtTime(0.0001, t);
+  env.gain.exponentialRampToValueAtTime(peak, a);
+  env.gain.exponentialRampToValueAtTime(peak*0.42, dEnd);
+  env.gain.exponentialRampToValueAtTime(Math.max(peak*0.14, 0.0002), eEnd);
+  env.gain.exponentialRampToValueAtTime(0.0001, rEnd);
+
+  o1.connect(flt);
+  o2.connect(g2); g2.connect(flt);
+  o3.connect(g3); g3.connect(flt);
+  flt.connect(env);
+  env.connect(dest);
+
+  const stopAt = rEnd + 0.06;
+  o1.start(t); o2.start(t); o3.start(t);
+  o1.stop(stopAt); o2.stop(stopAt); o3.stop(stopAt);
+  trackSource(o1, stopAt);
+  trackSource(o2, stopAt);
+  trackSource(o3, stopAt);
+}
+
+function kick(t, dest){
+  const o = ac.createOscillator(); o.type = "sine";
+  o.frequency.setValueAtTime(150, t);
+  o.frequency.exponentialRampToValueAtTime(46, t + 0.11);
+  const g = ac.createGain();
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.exponentialRampToValueAtTime(0.75, t + 0.006);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + 0.30);
+  o.connect(g); g.connect(dest);
+  o.start(t); o.stop(t + 0.33);
+  trackSource(o, t + 0.33);
+}
+function hat(t, dest, len, amp){
+  const s = ac.createBufferSource(); s.buffer = noiseBuf;
+  const f = ac.createBiquadFilter(); f.type = "highpass"; f.frequency.value = 6500;
+  const g = ac.createGain();
+  g.gain.setValueAtTime(amp, t);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + len);
+  s.connect(f); f.connect(g); g.connect(dest);
+  s.start(t); s.stop(t + len + 0.03);
+  trackSource(s, t + len + 0.03);
+}
+function clickSound(t, dest, strong){
+  const o = ac.createOscillator(); o.type = "square";
+  o.frequency.value = strong ? 1600 : 1100;
+  const g = ac.createGain();
+  const amp = strong ? 0.16 : 0.10;
+  g.gain.setValueAtTime(amp, t);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + 0.06);
+  o.connect(g); g.connect(dest);
+  o.start(t); o.stop(t + 0.08);
+  trackSource(o, t + 0.08);
+}
+
+/* 樂譜繪製 */
+const STEP_IDX = {C:0, D:1, E:2, F:3, G:4, A:5, B:6};
+function dIndex(pc, oct){ return oct*7 + STEP_IDX[pc]; }
+const TREBLE_E4 = dIndex("E",4);
+const BASS_A3   = dIndex("A",3);
+
+const TREBLE_TOP = 38, BASS_TOP = 120;
+function yTreble(pc, oct){ return TREBLE_TOP + 40 - (dIndex(pc,oct) - TREBLE_E4)*5; }
+/* 低音譜表最上面一線是 A3 */
+function yBass(pc, oct){   return BASS_TOP - (dIndex(pc,oct) - BASS_A3)*5; }
+
+const NOTE_SOLFEGE_ROW = 100;
+const LEFT_LABEL_Y = 176;
+const SYS_H = 212;
+const LEFT_PAD = 46;
+const RIGHT_PAD = 8;
+
+const scoreEls = { bars: [], noteList: [], noteMap: new Map() };
+function r1(n){ return Math.round(n*10)/10; }
+
+function buildSystem(svgParts, firstBar, count, perLine, W){
+  const barW = (W - LEFT_PAD - RIGHT_PAD) / perLine;
+  svgParts.push('<svg class="score-svg" viewBox="0 0 '+W+' '+SYS_H+'" width="'+W+'" height="'+SYS_H+'" xmlns="'+NS+'">');
+
+  const staffY = [0,10,20,30,40];
+  let s = "";
+  for(let i=0;i<5;i++){
+    s += '<line class="staff-line" x1="'+(LEFT_PAD-6)+'" y1="'+(TREBLE_TOP+staffY[i])+'" x2="'+(W-RIGHT_PAD)+'" y2="'+(TREBLE_TOP+staffY[i])+'"/>';
+    s += '<line class="staff-line" x1="'+(LEFT_PAD-6)+'" y1="'+(BASS_TOP+staffY[i])+'" x2="'+(W-RIGHT_PAD)+'" y2="'+(BASS_TOP+staffY[i])+'"/>';
+  }
+  s += '<text class="clef" x="'+(LEFT_PAD-38)+'" y="'+(TREBLE_TOP+42)+'" font-size="46">&#119070;</text>';
+  s += '<text class="clef" x="'+(LEFT_PAD-38)+'" y="'+(BASS_TOP+27)+'" font-size="34">&#119074;</text>';
+  svgParts.push(s);
+
+  for(let i=0;i<count;i++){
+    const bi = firstBar + i;
+    const song = SONGS[state.song];
+    const bar = song.parsed[bi];
+    const x0 = LEFT_PAD + i*barW;
+    const inner = barW - 22;
+    const beatW = inner / 4;
+    /* 第 b 拍的音符中心：右手與左手共用，這樣兩手同一拍一定垂直對齊 */
+    const beatX = function(b){ return x0 + 11 + b*beatW + beatW*0.5; };
+
+    svgParts.push('<rect class="bar-hl" data-hlbar="'+bi+'" x="'+r1(x0)+'" y="30" width="'+r1(barW)+'" height="145" rx="6"/>');
+    svgParts.push('<text class="bar-num" x="'+r1(x0+3)+'" y="16">'+(bi+1)+'</text>');
+
+    const chordList = bar.left;
+    const segBeats = 4 / chordList.length;
+    chordList.forEach(function(ch, k){
+      const gx = beatX(k*segBeats);
+      /* 和弦開始的那一拍，從右手譜拉一條淡淡的虛線到左手譜，方便對照 */
+      svgParts.push('<line class="beat-guide" x1="'+r1(gx)+'" y1="'+(TREBLE_TOP-2)+'" x2="'+r1(gx)+'" y2="'+(BASS_TOP+42)+'"/>');
+      svgParts.push(chordPill(gx, 14, ch));
+    });
+
+    let beat = 0;
+    bar.right.forEach(function(n, ni){
+      const x = beatX(beat);
+      if(n.rest){
+        svgParts.push(drawRest(x, n.dur));
+        beat += n.dur;
+        return;
+      }
+      const y = yTreble(n.pc, n.oct);
+      svgParts.push(drawNote(x, y, n.dur, "treble"));
+
+      const fing = n.finger || DEFAULT_FINGER[n.pc];
+      svgParts.push('<text class="fing-text" x="'+r1(x)+'" y="'+r1(y-9)+'" text-anchor="middle">'+fing+'</text>');
+
+      svgParts.push(
+        '<rect x="'+r1(x-13)+'" y="'+(NOTE_SOLFEGE_ROW-7)+'" width="26" height="14" rx="7" fill="var('+SOL_VAR[n.pc]+')"/>' +
+        '<text class="solfege-pill" x="'+r1(x)+'" y="'+(NOTE_SOLFEGE_ROW+3)+'" text-anchor="middle">'+SOLFEGE[n.pc]+'</text>'
+      );
+
+      svgParts.push('<rect x="'+r1(x-8)+'" y="'+r1(y-8)+'" width="16" height="16" fill="none" class="note-anchor" data-hand="right" data-bar="'+bi+'" data-idx="'+ni+'"/>');
+
+      beat += n.dur;
+    });
+
+    const lcount = chordList.length;
+    const lDurEach = 4 / lcount;
+    chordList.forEach(function(ch, ci){
+      const pc = ch;
+      const y = yBass(pc, 3);
+      const lx = beatX(ci*lDurEach);
+      svgParts.push(drawNote(lx, y, lDurEach, "bass"));
+
+      const fing = LEFT_FINGER[pc] || 5;
+      svgParts.push(
+        '<text class="left-label" x="'+r1(lx)+'" y="'+LEFT_LABEL_Y+'" text-anchor="middle">'+
+        SOLFEGE[pc]+' '+circleNum(fing)+'</text>'
+      );
+      svgParts.push('<rect x="'+r1(lx-8)+'" y="'+r1(y-8)+'" width="16" height="16" fill="none" class="note-anchor" data-hand="left" data-bar="'+bi+'" data-idx="'+ci+'"/>');
+    });
+
+    svgParts.push('<line class="barline" x1="'+r1(x0)+'" y1="'+TREBLE_TOP+'" x2="'+r1(x0)+'" y2="'+(TREBLE_TOP+40)+'"/>');
+    svgParts.push('<line class="barline" x1="'+r1(x0)+'" y1="'+BASS_TOP+'" x2="'+r1(x0)+'" y2="'+(BASS_TOP+40)+'"/>');
+
+    svgParts.push('<rect class="bar-hit" data-bar="'+bi+'" x="'+r1(x0)+'" y="30" width="'+r1(barW)+'" height="148"/>');
+
+    /* 老師確認勾選（畫在最上層，才點得到） */
+    const done = doneBars(song.id).indexOf(bi) >= 0;
+    const ckx = x0 + barW - 14, cky = 198;
+    svgParts.push('<rect class="bar-done'+(done?' on':'')+'" data-donebar="'+bi+'" x="'+r1(x0+2)+'" y="30" width="'+r1(barW-4)+'" height="145" rx="6"/>');
+    svgParts.push(
+      '<g class="bar-check'+(done?' on':'')+'" data-check="'+bi+'" role="button" tabindex="0" aria-pressed="'+done+'" aria-label="第 '+(bi+1)+' 小節老師確認">' +
+      '<circle cx="'+r1(ckx)+'" cy="'+cky+'" r="11" class="ck-hit"/>' +
+      '<circle cx="'+r1(ckx)+'" cy="'+cky+'" r="7.5" class="ck-ring"/>' +
+      '<path class="ck-mark" d="M '+r1(ckx-3.6)+' '+(cky+0.2)+' l 2.6 2.7 l 4.8 -5.4"/>' +
+      '</g>'
+    );
+  }
+
+  const endX = LEFT_PAD + count*barW;
+  svgParts.push('<line class="barline" x1="'+r1(endX)+'" y1="'+TREBLE_TOP+'" x2="'+r1(endX)+'" y2="'+(TREBLE_TOP+40)+'"/>');
+  svgParts.push('<line class="barline" x1="'+r1(endX)+'" y1="'+BASS_TOP+'" x2="'+r1(endX)+'" y2="'+(BASS_TOP+40)+'"/>');
+  svgParts.push('<line class="barline" x1="'+r1(endX-3)+'" y1="'+TREBLE_TOP+'" x2="'+r1(endX-3)+'" y2="'+(TREBLE_TOP+40)+'"/>');
+  svgParts.push('<line class="barline" x1="'+r1(endX-3)+'" y1="'+BASS_TOP+'" x2="'+r1(endX-3)+'" y2="'+(BASS_TOP+40)+'"/>');
+
+  svgParts.push("</svg>");
+}
+
+/* 休止符：全休止掛在第四線下、二分休止坐在第三線上，四分與八分用樂譜字型 */
+function drawRest(x, dur){
+  const T = TREBLE_TOP;
+  let s = "";
+  const base = dur >= 3 && dur < 4 ? 2 : (dur >= 1.5 && dur < 2 ? 1 : dur);
+  if(dur >= 4){
+    s += '<rect class="rest-block" x="'+r1(x-6)+'" y="'+(T+10)+'" width="12" height="5"/>';
+  }else if(base === 2){
+    s += '<rect class="rest-block" x="'+r1(x-6)+'" y="'+(T+15)+'" width="12" height="5"/>';
+  }else if(base === 1){
+    s += '<text class="rest-glyph" x="'+r1(x)+'" y="'+(T+30)+'" text-anchor="middle" font-size="30">&#119101;</text>';
+  }else{
+    s += '<text class="rest-glyph" x="'+r1(x)+'" y="'+(T+27)+'" text-anchor="middle" font-size="30">&#119102;</text>';
+  }
+  if(dur === 3 || dur === 1.5) s += '<circle class="dot-note" cx="'+r1(x+10)+'" cy="'+(T+15)+'" r="1.6"/>';
+  return '<g class="rest">'+s+'<text class="rest-label" x="'+r1(x)+'" y="'+(NOTE_SOLFEGE_ROW+3)+'" text-anchor="middle">休息</text></g>';
+}
+
+function chordPill(cx, cy, ch){
+  const v = CHORD_VAR[ch] || "--muted";
+  const w = 26, h = 16;
+  return '<rect x="'+r1(cx-w/2)+'" y="'+r1(cy-h/2)+'" width="'+w+'" height="'+h+'" rx="8" fill="var('+v+')"/>' +
+         '<text class="chord-pill" x="'+r1(cx)+'" y="'+r1(cy+4)+'" text-anchor="middle">'+ch+'</text>';
+}
+function circleNum(n){
+  return ["⓪","①","②","③","④","⑤","⑥","⑦","⑧","⑨"][n] || String(n);
+}
+
+function drawNote(x, y, dur, clef){
+  const g = [];
+  const hollow = dur >= 2;
+  const hasStem = dur < 4;
+
+  const topY = clef === "treble" ? TREBLE_TOP : BASS_TOP;
+  const botY = topY + 40;
+  if(y < topY - 1){
+    for(let ly = topY - 10; ly >= y - 1; ly -= 10){
+      g.push('<line class="ledger-line" x1="'+r1(x-9)+'" y1="'+r1(ly)+'" x2="'+r1(x+9)+'" y2="'+r1(ly)+'"/>');
+    }
+  }
+  if(y > botY + 1){
+    for(let ly = botY + 10; ly <= y + 1; ly += 10){
+      g.push('<line class="ledger-line" x1="'+r1(x-9)+'" y1="'+r1(ly)+'" x2="'+r1(x+9)+'" y2="'+r1(ly)+'"/>');
+    }
+  }
+
+  const cls = hollow ? "note-head open" : "note-head";
+  g.push('<ellipse class="'+cls+'" cx="'+r1(x)+'" cy="'+r1(y)+'" rx="5.5" ry="4" transform="rotate(-20 '+r1(x)+' '+r1(y)+')"/>');
+
+  if(hasStem){
+    const up = y > (clef === "treble" ? 58 : 140);
+    const sx = up ? x + 4.6 : x - 4.6;
+    const sy = up ? y - 30 : y + 30;
+    g.push('<line class="stem" x1="'+r1(sx)+'" y1="'+r1(y)+'" x2="'+r1(sx)+'" y2="'+r1(sy)+'"/>');
+
+    if(dur <= 0.5){
+      if(up){
+        g.push('<path class="flag" d="M '+r1(sx)+' '+r1(sy)+' q 8 5 6 16"/>');
+      }else{
+        g.push('<path class="flag" d="M '+r1(sx)+' '+r1(sy)+' q 8 -5 6 -16"/>');
+      }
+    }
+  }
+
+  if(dur === 1.5 || dur === 3 || dur === 0.75){
+    g.push('<circle class="dot-note" cx="'+r1(x+10)+'" cy="'+r1(y-4)+'" r="1.6"/>');
+  }
+
+  return '<g class="note-group">' + g.join("") + '</g>';
+}
+
+function renderScore(){
+  const wrap = document.getElementById("scoreWrap");
+  if(!wrap) return;
+  const W = Math.max(280, wrap.clientWidth || 320);
+  const narrow = W < 560;
+  const perLine = narrow ? 2 : 4;
+  const song = SONGS[state.song];
+  const total = song.bars.length;
+  const lines = Math.ceil(total / perLine);
+
+  scoreEls.bars = [];
+  scoreEls.noteList = [];
+  scoreEls.noteMap.clear();
+
+  const parts = [];
+  for(let li=0; li<lines; li++){
+    const first = li*perLine;
+    const count = Math.min(perLine, total - first);
+    buildSystem(parts, first, count, perLine, W);
+  }
+  wrap.innerHTML = parts.join("");
+
+  wrap.querySelectorAll('[data-hlbar]').forEach(function(el){ scoreEls.bars.push(el); });
+  wrap.querySelectorAll("svg").forEach(function(svg){
+    const hls = svg.querySelectorAll(".bar-hl, .bar-done");
+    hls.forEach(function(h){ svg.insertBefore(h, svg.firstChild); });
+  });
+
+  wrap.querySelectorAll(".bar-check").forEach(function(g){
+    function flip(ev){
+      ev.preventDefault();
+      ev.stopPropagation();
+      const bi = parseInt(g.getAttribute("data-check"),10);
+      toggleDone(SONGS[state.song].id, bi);
+      const on = doneBars(SONGS[state.song].id).indexOf(bi) >= 0;
+      g.classList.toggle("on", on);
+      g.setAttribute("aria-pressed", on ? "true" : "false");
+      const tint = wrap.querySelector('.bar-done[data-donebar="'+bi+'"]');
+      if(tint) tint.classList.toggle("on", on);
+      renderProgress();
+      renderSongs();
+    }
+    g.addEventListener("click", flip);
+    g.addEventListener("keydown", function(ev){
+      if(ev.key === "Enter" || ev.key === " ") flip(ev);
+    });
+  });
+
+  wrap.querySelectorAll(".note-anchor").forEach(function(anchor){
+    const hand = anchor.getAttribute("data-hand");
+    const bar = anchor.getAttribute("data-bar");
+    const idx = anchor.getAttribute("data-idx");
+    let prev = anchor.previousElementSibling;
+    while(prev && !(prev.classList && prev.classList.contains("note-group"))){
+      prev = prev.previousElementSibling;
+    }
+    if(prev){
+      scoreEls.noteMap.set(hand+"-"+bar+"-"+idx, prev);
+      scoreEls.noteList.push(prev);
+    }
+    anchor.remove();
+  });
+
+  wrap.querySelectorAll(".bar-hit").forEach(function(r){
+    r.addEventListener("click", function(){
+      barClick(parseInt(r.getAttribute("data-bar"),10));
+    });
+  });
+
+  updateSelectionVisual();
+  renderScoreMeta();
+}
+
+function renderScoreMeta(){
+  const song = SONGS[state.song];
+  const used = {};
+  song.parsed.forEach(function(b){
+    b.right.forEach(function(n){ if(!n.rest) used[n.pc] = true; });
+  });
+  const sols = Object.keys(SOLFEGE).filter(function(k){ return used[k]; })
+    .map(function(k){ return '<span class="tag" style="color:var(--'+SOL_VAR[k]+');font-weight:700;">'+SOLFEGE[k]+'</span>'; })
+    .join(" ");
+  const chs = song.chords.map(function(c){
+    return '<span class="tag" style="color:#fff;background:var('+CHORD_VAR[c]+')">'+c+'</span>';
+  }).join(" ");
+
+  const lesson = LESSONS.find(function(L){ return L.songs.indexOf(song.id) >= 0; });
+  document.getElementById("scoreMeta").innerHTML =
+    (lesson ? '<span class="lesson-goal"><b>'+lesson.title+'</b>　'+lesson.goal+'</span>' : '') +
+    '<span class="tag">拍號 4/4</span>' +
+    '<span class="tag">共 '+song.bars.length+' 小節</span>' +
+    '<span>唱名：'+sols+'</span>' +
+    '<span>和弦：'+chs+'</span>';
+}
+
+function updateSelectionVisual(){
+  const wrap = document.getElementById("scoreWrap");
+  if(!wrap) return;
+  wrap.querySelectorAll(".sel-rect").forEach(function(e){ e.remove(); });
+
+  if(state.selA === null) return;
+  const a = state.selA;
+  const b = state.selB === null ? state.selA : state.selB;
+
+  wrap.querySelectorAll(".bar-hit").forEach(function(r){
+    const bi = parseInt(r.getAttribute("data-bar"),10);
+    if(bi === a || bi === b || (bi > a && bi < b)){
+      const svg = r.ownerSVGElement;
+      if(!svg) return;
+      if(svg.querySelector('.sel-rect[data-s="'+bi+'"]')) return;
+      const rect = document.createElementNS(NS, "rect");
+      rect.setAttribute("x", r.getAttribute("x"));
+      rect.setAttribute("y", r.getAttribute("y"));
+      rect.setAttribute("width", r.getAttribute("width"));
+      rect.setAttribute("height", r.getAttribute("height"));
+      rect.setAttribute("rx", "6");
+      rect.setAttribute("class", "sel-rect");
+      rect.setAttribute("data-s", bi);
+      svg.appendChild(rect);
+    }
+  });
+  updateRangeInfo();
+}
+
+function barClick(bi){
+  if(state.selA === null){
+    state.selA = bi; state.selB = bi;
+  }else{
+    const a = state.selA, b = state.selB === null ? state.selA : state.selB;
+    if(bi >= a && bi <= b){
+      state.selA = null; state.selB = null;
+    }else if(bi < a){
+      state.selA = bi;
+    }else{
+      state.selB = bi;
+    }
+  }
+  updateSelectionVisual();
+  if(player || pausedAt !== null) stopPlayback();
+}
+
+function currentRange(){
+  const total = SONGS[state.song].bars.length;
+  if(state.selA === null) return [0, total-1];
+  const a = state.selA;
+  const b = state.selB === null ? state.selA : state.selB;
+  return [Math.min(a,b), Math.max(a,b)];
+}
+
+function updateRangeInfo(){
+  const song = SONGS[state.song];
+  const r = currentRange();
+  const n = r[1] - r[0] + 1;
+  let txt;
+  if(state.selA === null){
+    txt = '目前範圍：<b>整首</b>（第 1–'+song.bars.length+' 小節）';
+  }else if(state.selB === null){
+    txt = '目前範圍：<b>第 '+(r[0]+1)+' 小節</b>（再點一個小節設終點）';
+  }else{
+    txt = '目前範圍：<b>第 '+(r[0]+1)+'–'+(r[1]+1)+' 小節</b>（共 '+n+' 小節）';
+  }
+  if(pausedAt !== null){
+    txt += ' ・ <b>已暫停</b>，按繼續從第 '+(pausedAt+1)+' 小節接續';
+  }else if(player){
+    const lap = currentLap();
+    if(lap > 0) txt += ' ・ 循環第 <b>'+lap+'</b> 遍（♩ = '+player.rounds[lap-1].bpm+'）';
+  }
+  document.getElementById("rangeInfo").innerHTML = txt;
+}
+
+/* 鍵盤 */
+const WHITE_KEYS = ["C4","D4","E4","F4","G4","A4","B4"];
+const BLACK_KEYS = [
+  {name:"C#4", after:0},
+  {name:"D#4", after:1},
+  {name:"F#4", after:3},
+  {name:"G#4", after:4},
+  {name:"A#4", after:5}
+];
+const keyEls = new Map();
+
+function renderKeyboard(){
+  const wrap = document.getElementById("keys");
+  wrap.innerHTML = "";
+  keyEls.clear();
+  const n = WHITE_KEYS.length;
+  const unit = 100 / n;
+
+  WHITE_KEYS.forEach(function(name){
+    const pc = name[0];
+    const btn = document.createElement("div");
+    btn.className = "wkey";
+    btn.setAttribute("role", "button");
+    btn.setAttribute("tabindex", "-1");
+    btn.setAttribute("data-note", name);
+    btn.setAttribute("aria-label", SOLFEGE[pc] + " " + name);
+
+    const isLeftChord = (pc === "C" || pc === "F" || pc === "G");
+    const leftHtml = isLeftChord
+      ? '<span class="wk-left show" style="--c:var('+CHORD_VAR[pc]+')">左'+circleNum(LEFT_FINGER[pc])+'</span>'
+      : '<span class="wk-left">.</span>';
+
+    btn.innerHTML = leftHtml + '<span class="wk-finger">'+DEFAULT_FINGER[pc]+'</span>';
+    btn.addEventListener("pointerdown", function(ev){
+      ev.preventDefault();
+      pressKeyByNote(name);
+    });
+    wrap.appendChild(btn);
+    keyEls.set(name, btn);
+  });
+
+  const bw = unit * 0.62;
+  BLACK_KEYS.forEach(function(bk){
+    const el = document.createElement("div");
+    el.className = "bkey";
+    el.setAttribute("data-note", bk.name);
+    el.style.width = bw + "%";
+    el.style.left = ((bk.after+1)*unit - bw/2) + "%";
+    el.addEventListener("pointerdown", function(ev){
+      ev.preventDefault();
+      pressKeyByNote(bk.name);
+    });
+    wrap.appendChild(el);
+    keyEls.set(bk.name, el);
+  });
+}
+
+function pressKeyByNote(name){
+  resumeAudio();
+  const m = /^([A-G])(#?)(\d)$/.exec(name);
+  if(!m) return;
+  const pc = m[1], sharp = m[2] === "#", oct = parseInt(m[3],10);
+  const midi = pitchToMidi(pc, oct) + (sharp ? 1 : 0);
+  const t = ac.currentTime + 0.01;
+  pianoNote(midi, t, 0.5, audio.melody);
+  if(pc === "C" || pc === "F" || pc === "G"){
+    const chordMidi = {C:[48,52,55], F:[53,57,60], G:[55,59,62]}[pc];
+    chordMidi.forEach(function(mm){ pianoNote(mm, t, 0.5, audio.chord); });
+  }
+  const el = keyEls.get(name);
+  if(el){
+    el.classList.add("pressed");
+    setTimeout(function(){ el.classList.remove("pressed"); }, 150);
+  }
+}
+
+function renderHands(){
+  const hL = document.getElementById("handL");
+  const hR = document.getElementById("handR");
+  hL.innerHTML = '<span class="hlabel">左手</span>' +
+    [1,2,3,4,5].map(function(i){ return '<div class="finger" data-hand="L" data-f="'+i+'">'+i+'</div>'; }).join("");
+  hR.innerHTML = '<span class="hlabel">右手</span>' +
+    [1,2,3,4,5].map(function(i){ return '<div class="finger" data-hand="R" data-f="'+i+'">'+i+'</div>'; }).join("");
+}
+function clearHands(){
+  document.querySelectorAll(".finger.up").forEach(function(e){ e.classList.remove("up"); });
+}
+function setFinger(hand, f){
+  const el = document.querySelector('.finger[data-hand="'+hand+'"][data-f="'+f+'"]');
+  if(el) el.classList.add("up");
+}
+
+/* 播放排程 */
+let player = null;
+let rafId = 0;
+let pausedAt = null;
+let pausedMode = null;
+let lastScrolledBar = -1;
+
+function clearHighlights(){
+  scoreEls.bars.forEach(function(b){ b.classList.remove("on"); });
+  scoreEls.noteList.forEach(function(n){ n.classList.remove("is-on"); });
+  keyEls.forEach(function(el){ el.classList.remove("pressed","hint"); });
+}
+
+function resetNowChord(){
+  document.getElementById("ncValue").textContent = "—";
+  document.getElementById("ncValue").style.color = "var(--accent)";
+  document.getElementById("ncLeft").textContent = "—";
+  document.getElementById("ncNext").textContent = "下一個：—";
+}
+
+function updatePlayButtons(){
+  const once = document.getElementById("btnOnce");
+  const loop = document.getElementById("btnLoop");
+  const pause = document.getElementById("btnPause");
+  const playing = !!player;
+
+  once.setAttribute("aria-pressed", playing && player.mode === "once" ? "true" : "false");
+  loop.setAttribute("aria-pressed", playing && player.mode === "loop" ? "true" : "false");
+
+  if(pausedAt !== null){
+    pause.disabled = false;
+    pause.textContent = "▶ 繼續";
+  }else if(playing){
+    pause.disabled = false;
+    pause.textContent = "⏸ 暫停";
+  }else{
+    pause.disabled = true;
+    pause.textContent = "⏸ 暫停";
+  }
+  pause.setAttribute("aria-pressed", "false");
+}
+
+function stopPlayback(){
+  if(player){ player.stopped = true; }
+  endLadder();
+  player = null;
+  pausedAt = null;
+  pausedMode = null;
+  if(rafId){ cancelAnimationFrame(rafId); rafId = 0; }
+  stopAllSources();
+  clearHighlights();
+  clearHands();
+  resetNowChord();
+  updatePlayButtons();
+  updateRangeInfo();
+}
+
+function pausePlayback(){
+  if(!player) return;
+  const now = ac.currentTime;
+  const range = currentRange();
+
+  let curBar = range[0];
+  for(let i=0; i<player.rounds.length; i++){
+    const r = player.rounds[i];
+    for(let j=0; j<r.bars.length; j++){
+      if(now >= r.bars[j].start) curBar = r.bars[j].index;
+    }
+  }
+
+  pausedMode = player.mode;
+
+  player.stopped = true;
+  player = null;
+  if(rafId){ cancelAnimationFrame(rafId); rafId = 0; }
+
+  stopAllSources();
+  clearHighlights();
+  clearHands();
+
+  pausedAt = curBar;
+
+  updatePlayButtons();
+  updateRangeInfo();
+
+  const ncValue = document.getElementById("ncValue");
+  ncValue.textContent = "暫停";
+  ncValue.style.color = "var(--accent)";
+  document.getElementById("ncLeft").textContent = "第 " + (curBar+1) + " 小節";
+  document.getElementById("ncNext").textContent = "按「繼續」接續";
+}
+
+function resumePlayback(){
+  if(pausedAt === null) return;
+  const startBar = pausedAt;
+  const mode = pausedMode || "once";
+  pausedAt = null;
+  pausedMode = null;
+
+  /* 從暫停的小節接續，但不改動老師選好的練習段落 */
+  lastScrolledBar = -1;
+  startPlayback(mode, true, startBar);
+}
+
+function currentLap(){
+  if(!player) return 0;
+  const now = ac.currentTime;
+  let lap = 0;
+  for(let i=0;i<player.rounds.length;i++){
+    if(now >= player.rounds[i].musicStart) lap = i+1;
+  }
+  return lap;
+}
+
+function chordMidi(name){
+  return {
+    C:{bass:36, tones:[48,52,55]},
+    F:{bass:41, tones:[53,57,60]},
+    G:{bass:43, tones:[55,59,62]}
+  }[name];
+}
+
+function scheduleRound(musicStart, beat, countInStart, countInBeats, fromBar){
+  const song = SONGS[state.song];
+  const range = currentRange();
+  const e = range[1];
+  const s = (typeof fromBar === "number" && fromBar >= range[0] && fromBar <= e) ? fromBar : range[0];
+  const round = {
+    bpm: Math.round(60/beat),
+    musicStart: musicStart,
+    endTime: musicStart + (e-s+1)*4*beat,
+    bars: [],
+    events: []
+  };
+
+  if(countInStart !== null && countInStart !== undefined){
+    const n = countInBeats || 4;
+    for(let i=0;i<n;i++){
+      const t = countInStart + i*beat;
+      round.events.push({type:"count", t:t, n:i+1});
+      clickSound(t, audio.click, i===0);
+    }
+  }
+
+  for(let bi = s; bi <= e; bi++){
+    const bar = song.parsed[bi];
+    const tBar = musicStart + (bi - s)*4*beat;
+    const barObj = { index: bi, start: tBar, end: tBar + 4*beat, notes: [] };
+
+    const chordList = bar.left;
+    const segLen = 4 / chordList.length;
+
+    let t = tBar;
+    bar.right.forEach(function(n, ni){
+      const durSec = n.dur * beat;
+      if(n.rest){ t += durSec; return; }
+      const midi = pitchToMidi(n.pc, n.oct);
+      const fing = n.finger || DEFAULT_FINGER[n.pc];
+
+      let playEnd = t + durSec;
+      if(state.sustain){
+        const segIdx = Math.min(chordList.length-1, Math.floor((t - tBar)/(segLen*beat)));
+        const segEnd = tBar + (segIdx+1)*segLen*beat;
+        playEnd = Math.max(playEnd, segEnd + 0.25);
+      }
+
+      pianoNote(midi, t, playEnd - t, audio.melody);
+
+      const ev = {
+        t: t, end: playEnd, midi: midi, hand:"right",
+        bar: bi, idx: ni, fing: fing, pc: n.pc
+      };
+      round.events.push(ev);
+      barObj.notes.push(ev);
+      t += durSec;
+    });
+
+    chordList.forEach(function(ch, ci){
+      const tC = tBar + ci*segLen*beat;
+      const segEnd = tC + segLen*beat;
+      const info = chordMidi(ch);
+
+      let leftEnd = segEnd;
+      if(state.sustain) leftEnd = segEnd + 0.25;
+
+      info.tones.forEach(function(m, k){
+        pianoNote(m, tC, leftEnd - tC + (k===0?0.15:0), audio.chord);
+      });
+
+      const ev = {
+        t: tC, end: leftEnd, midi: info.tones[0], hand:"left",
+        bar: bi, idx: ci, fing: LEFT_FINGER[ch] || 5,
+        pc: ch, chord: ch
+      };
+      round.events.push(ev);
+
+      scheduleAccomp(ch, tC, beat);
+    });
+
+    round.bars.push(barObj);
+  }
+
+  round.events.sort(function(a,b){ return a.t - b.t; });
+  player.rounds.push(round);
+  return round;
+}
+
+function scheduleAccomp(ch, t0, beat){
+  const info = chordMidi(ch);
+  const tones = info.tones;
+  const bass = info.bass;
+  const dest = audio.accomp;
+  const drumDest = audio.drums;
+
+  if(state.rhythm === "march"){
+    pianoNote(bass, t0, state.sustain ? beat*2.2 : beat*1.1, dest);
+    kick(t0, drumDest);
+    pianoNote(tones[0], t0+beat, state.sustain ? beat*1.2 : beat*0.7, dest);
+    hat(t0+beat, drumDest, 0.07, 0.18);
+    pianoNote(bass + 7, t0+2*beat, state.sustain ? beat*2.0 : beat*1.0, dest);
+    kick(t0+2*beat, drumDest);
+    pianoNote(tones[0], t0+3*beat, state.sustain ? beat*1.2 : beat*0.7, dest);
+    hat(t0+3*beat, drumDest, 0.07, 0.18);
+  }
+  else if(state.rhythm === "lyric"){
+    const seq = [bass, tones[1], tones[2], bass+12, tones[2], tones[1], bass, tones[2]];
+    const eighth = beat/2;
+    seq.forEach(function(m, i){
+      pianoNote(m, t0 + i*eighth, state.sustain ? beat*1.6 : eighth*1.5, dest);
+    });
+    hat(t0, drumDest, 0.05, 0.07);
+  }
+  else{
+    const eighth = beat/2;
+    for(let i=0;i<8;i++){
+      const t = t0 + i*eighth;
+      if(i === 0 || i === 4){
+        pianoNote(bass, t, state.sustain ? beat*1.2 : eighth*1.4, dest);
+        kick(t, drumDest);
+      }else if(i === 2 || i === 6){
+        tones.forEach(function(m){
+          pianoNote(m, t, state.sustain ? beat*0.9 : eighth*1.2, dest);
+        });
+      }else{
+        pianoNote(tones[(i%3)], t, eighth*0.9, dest);
+      }
+      hat(t, drumDest, 0.045, i%2===0 ? 0.13 : 0.07);
+    }
+  }
+}
+
+/* 速度階梯：一直循環時每遍自動加快，停止後回到起始速度 */
+let ladderStartBpm = null;
+let lastLadder = null;
+function setBpmUI(){
+  document.getElementById("bpmRange").value = state.bpm;
+  document.getElementById("bpmValue").textContent = "♩ = " + state.bpm;
+}
+function renderLadderInfo(){
+  const info = document.getElementById("ladderInfo");
+  if(!info) return;
+  if(!state.ladder.on){
+    info.textContent = "開啟後按「一直循環」，每遍會自動加快一點。";
+  }else if(ladderStartBpm !== null){
+    let cur = state.bpm;
+    if(player && player.rounds.length){
+      const lap = currentLap();
+      cur = player.rounds[Math.max(0, lap-1)].bpm;
+    }
+    info.innerHTML = "從 ♩ = "+ladderStartBpm+" 開始，現在 <b>♩ = "+cur+"</b>，最快到 "+state.ladder.max;
+  }else if(lastLadder){
+    info.innerHTML = "上一次從 ♩ = "+lastLadder.from+" 加到 <b>♩ = "+lastLadder.to+"</b>";
+  }else{
+    info.textContent = "按「一直循環」開始：從 ♩ = "+state.bpm+" 起，每遍加 "+state.ladder.step+"，最快到 "+state.ladder.max+"。";
+  }
+}
+function endLadder(){
+  if(ladderStartBpm === null) return;
+  lastLadder = { from: ladderStartBpm, to: state.bpm };
+  state.bpm = ladderStartBpm;
+  ladderStartBpm = null;
+  setBpmUI();
+  renderLadderInfo();
+}
+
+function startPlayback(mode, isResume, fromBar){
+  resumeAudio();
+  if(player){ player.stopped = true; }
+  if(rafId){ cancelAnimationFrame(rafId); rafId = 0; }
+  stopAllSources();
+
+  const beat = 60 / state.bpm;
+  const now = ac.currentTime + 0.15;
+  const countInBeats = 4;
+  if(!isResume){
+    endLadder();
+    if(mode === "loop" && state.ladder.on){ ladderStartBpm = state.bpm; lastLadder = null; }
+  }
+  const countIn = countInBeats * beat;
+
+  player = {
+    mode: mode,
+    loop: mode === "loop",
+    beat: beat,
+    rounds: [],
+    stopped: false
+  };
+
+  lastScrolledBar = -1;
+  scheduleRound(now + countIn, beat, now, countInBeats, fromBar);
+  updatePlayButtons();
+  renderLadderInfo();
+  updateRangeInfo();
+  rafId = requestAnimationFrame(tick);
+}
+
+function tick(){
+  if(!player || player.stopped) return;
+  const now = ac.currentTime;
+
+  const last = player.rounds[player.rounds.length - 1];
+  if(player.loop && last && now > last.endTime - 0.45){
+    if(state.ladder.on && ladderStartBpm !== null){
+      const next = Math.min(state.ladder.max, state.bpm + state.ladder.step);
+      if(next > state.bpm){
+        state.bpm = next;
+        player.beat = 60 / next;
+        setBpmUI();
+        renderLadderInfo();
+      }
+    }
+    scheduleRound(last.endTime, player.beat, null, 0);
+    updateRangeInfo();
+  }
+
+  updatePlaybackVisual(now);
+
+  const lapNow = currentLap();
+  if(lapNow !== player.shownLap){
+    player.shownLap = lapNow;
+    updateRangeInfo();
+    renderLadderInfo();
+  }
+
+  const tail = player.rounds[player.rounds.length - 1];
+  if(!player.loop && tail && now > tail.endTime + 0.6){
+    stopPlayback();
+    return;
+  }
+  if(player.loop && !last){
+    stopPlayback();
+    return;
+  }
+
+  rafId = requestAnimationFrame(tick);
+}
+
+function updatePlaybackVisual(now){
+  let curRound = null;
+  for(let i=0;i<player.rounds.length;i++){
+    const r = player.rounds[i];
+    if(now >= r.musicStart && now < r.endTime){ curRound = r; break; }
+  }
+
+  if(!curRound && player.rounds.length){
+    const r0 = player.rounds[0];
+    if(now < r0.musicStart){
+      const remain = Math.max(1, Math.ceil((r0.musicStart - now) / player.beat));
+      document.getElementById("ncValue").textContent = String(remain);
+      document.getElementById("ncValue").style.color = "var(--accent)";
+      document.getElementById("ncLeft").textContent = "預備拍";
+      document.getElementById("ncNext").textContent = "下一個：—";
+      clearHighlights();
+      clearHands();
+      return;
+    }
+  }
+
+  if(!curRound){
+    clearHighlights();
+    return;
+  }
+
+  let barObj = null;
+  for(let i=0;i<curRound.bars.length;i++){
+    const b = curRound.bars[i];
+    if(now >= b.start && now < b.end){ barObj = b; break; }
+  }
+  if(!barObj) barObj = curRound.bars[curRound.bars.length-1];
+
+  scoreEls.bars.forEach(function(el){
+    const bi = parseInt(el.getAttribute("data-hlbar"),10);
+    if(bi === barObj.index) el.classList.add("on");
+    else el.classList.remove("on");
+  });
+
+  /* 只有開啟「跟隨樂譜」才自動捲動 */
+  if(state.follow && barObj.index !== lastScrolledBar){
+    lastScrolledBar = barObj.index;
+    const hit = document.querySelector('.bar-hit[data-bar="'+barObj.index+'"]');
+    if(hit && hit.ownerSVGElement){
+      const r = hit.ownerSVGElement.getBoundingClientRect();
+      if(r.top < 80 || r.bottom > window.innerHeight - 200){
+        hit.ownerSVGElement.scrollIntoView({behavior:"smooth", block:"center"});
+      }
+    }
+  }
+
+  let curNote = null;
+  let nextNote = null;
+  for(let i=0;i<curRound.events.length;i++){
+    const ev = curRound.events[i];
+    if(ev.type === "count") continue;
+    if(now >= ev.t && now < ev.end){
+      if(!curNote || ev.hand === "right") curNote = ev;
+    }
+    if(ev.t > now && !nextNote) nextNote = ev;
+  }
+
+  scoreEls.noteList.forEach(function(n){ n.classList.remove("is-on"); });
+  if(curNote){
+    const key = curNote.hand + "-" + curNote.bar + "-" + curNote.idx;
+    const g = scoreEls.noteMap.get(key);
+    if(g) g.classList.add("is-on");
+  }
+
+  keyEls.forEach(function(el){ el.classList.remove("pressed","hint"); });
+
+  if(curNote && curNote.hand === "right"){
+    const el = keyEls.get(midiToName(curNote.midi));
+    if(el) el.classList.add("pressed");
+  }
+  if(curNote && curNote.hand === "left"){
+    const el = keyEls.get(curNote.pc + "4");
+    if(el) el.classList.add("pressed");
+  }
+  if(nextNote && nextNote.hand === "right"){
+    const el = keyEls.get(midiToName(nextNote.midi));
+    if(el) el.classList.add("hint");
+  }
+
+  const chordNow = chordForBar(barObj.index, now, curRound);
+  const ncValue = document.getElementById("ncValue");
+  ncValue.textContent = chordNow;
+  ncValue.style.color = "var(" + (CHORD_VAR[chordNow] || "--accent") + ")";
+  document.getElementById("ncLeft").textContent =
+    SOLFEGE[chordNow] + " " + circleNum(LEFT_FINGER[chordNow] || 5);
+
+  const nextBar = barObj.index + 1;
+  const song = SONGS[state.song];
+  let nextChord = "—";
+  if(nextBar < song.bars.length) nextChord = song.parsed[nextBar].left[0];
+  else if(player.loop) nextChord = song.parsed[currentRange()[0]].left[0];
+  document.getElementById("ncNext").textContent = "下一個：" + nextChord;
+
+  clearHands();
+  if(curNote){
+    if(curNote.hand === "right") setFinger("R", curNote.fing);
+    else setFinger("L", curNote.fing);
+  }
+}
+
+function chordForBar(barIndex, now, round){
+  const song = SONGS[state.song];
+  const bar = song.parsed[barIndex];
+  const list = bar.left;
+  if(list.length === 1) return list[0];
+  const barObj = round.bars.find(function(b){ return b.index === barIndex; });
+  if(!barObj) return list[0];
+  const frac = (now - barObj.start) / (barObj.end - barObj.start);
+  const i = Math.min(list.length-1, Math.max(0, Math.floor(frac * list.length)));
+  return list[i];
+}
+
+function midiToName(m){
+  const names = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
+  const oct = Math.floor(m/12) - 1;
+  return names[m % 12] + oct;
+}
+
+/* 介面 */
+function renderSolfegeStrip(){
+  const order = ["C","D","E","F","G","A","B"];
+  document.getElementById("solfegeStrip").innerHTML = order.map(function(pc){
+    return '<span class="sf" style="--c:var('+SOL_VAR[pc]+')">'+SOLFEGE[pc]+'</span>';
+  }).join("");
+}
+
+function songCard(s, i){
+  const stars = "★".repeat(s.stars) + "☆".repeat(3 - s.stars);
+  const chips = s.chords.map(function(c){
+    return '<i class="ch-chip" style="--c:var('+CHORD_VAR[c]+')">'+c+'</i>';
+  }).join("");
+  const done = doneBars(s.id).length, total = s.bars.length;
+  const prog = done === 0 ? '' :
+    '<span class="sc-prog'+(done >= total ? ' full' : '')+'">'+(done >= total ? '✔ 全部練熟' : '✔ '+done+' / '+total+' 小節')+'</span>';
+  return '<button class="song-card" data-i="'+i+'" aria-pressed="'+(i===state.song)+'">' +
+    '<span class="sc-title">'+s.title+'</span>' +
+    '<span class="sc-stars" aria-label="難度 '+s.stars+' 顆星">'+stars+'</span>' +
+    '<span class="sc-chords">'+chips+'</span>' + prog +
+    '</button>';
+}
+function renderSongs(){
+  const grid = document.getElementById("songGrid");
+  const used = {};
+  let html = LESSONS.map(function(L){
+    const cards = L.songs.map(function(id){
+      const i = SONGS.findIndex(function(s){ return s.id === id; });
+      if(i < 0) return "";
+      used[id] = true;
+      return songCard(SONGS[i], i);
+    }).join("");
+    return '<div class="lesson"><div class="lesson-head"><h3>'+L.title+'</h3><p>'+L.goal+'</p></div>' +
+      '<div class="song-grid">'+cards+'</div></div>';
+  }).join("");
+  /* 沒有放進課程的曲子，放在最後「其他曲子」 */
+  const rest = SONGS.map(function(s, i){ return used[s.id] ? "" : songCard(s, i); }).join("");
+  if(rest) html += '<div class="lesson"><div class="lesson-head"><h3>其他曲子</h3><p>還沒排進課程的曲子。</p></div><div class="song-grid">'+rest+'</div></div>';
+  grid.innerHTML = html;
+
+  grid.querySelectorAll(".song-card").forEach(function(btn){
+    btn.addEventListener("click", function(){
+      const i = parseInt(btn.getAttribute("data-i"),10);
+      if(i === state.song) return;
+      state.song = i;
+      state.selA = null; state.selB = null;
+      stopPlayback();
+      renderSongs();
+      renderRangeButtons();
+      renderScore();
+      renderProgress();
+      updateRangeInfo();
+    });
+  });
+}
+
+/* 學生選單與練熟進度 */
+function twoStep(btn, label, confirmLabel, action){
+  let armed = false, timer = 0;
+  btn.addEventListener("click", function(){
+    if(btn.disabled) return;
+    if(!armed){
+      armed = true;
+      btn.textContent = confirmLabel;
+      btn.classList.add("warn");
+      timer = setTimeout(function(){ armed = false; btn.textContent = label; btn.classList.remove("warn"); }, 3000);
+      return;
+    }
+    clearTimeout(timer);
+    armed = false; btn.textContent = label; btn.classList.remove("warn");
+    action();
+  });
+}
+function renderProgress(){
+  const sel = document.getElementById("studentSel");
+  sel.innerHTML = progress.students.map(function(n){
+    const esc = n.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/"/g,"&quot;");
+    return '<option value="'+esc+'"'+(n===progress.cur?' selected':'')+'>'+esc+'</option>';
+  }).join("");
+  const song = SONGS[state.song];
+  const done = doneBars(song.id).length, total = song.bars.length;
+  document.getElementById("progressInfo").innerHTML =
+    '本曲已練熟 <b>'+done+' / '+total+'</b> 小節' + (done >= total ? '　🎉 全部完成！' : '');
+  document.getElementById("btnDelStudent").disabled = progress.students.length <= 1;
+}
+function bindProgress(){
+  const sel = document.getElementById("studentSel");
+  sel.addEventListener("change", function(){
+    progress.cur = sel.value;
+    saveProgress();
+    renderProgress(); renderSongs(); renderScore();
+  });
+  const input = document.getElementById("newStudent");
+  function add(){
+    const name = input.value.trim().slice(0, 20);
+    if(!name) { input.focus(); return; }
+    if(progress.students.indexOf(name) < 0) progress.students.push(name);
+    progress.cur = name;
+    input.value = "";
+    saveProgress();
+    renderProgress(); renderSongs(); renderScore();
+  }
+  document.getElementById("btnAddStudent").addEventListener("click", add);
+  input.addEventListener("keydown", function(ev){ if(ev.key === "Enter"){ ev.preventDefault(); add(); } });
+  twoStep(document.getElementById("btnClearDone"), "清除這首的勾選", "再按一次確定清除", function(){
+    const st = progress.done[progress.cur];
+    if(st) delete st[SONGS[state.song].id];
+    saveProgress();
+    renderProgress(); renderSongs(); renderScore();
+  });
+  twoStep(document.getElementById("btnDelStudent"), "刪除這位學生", "再按一次確定刪除", function(){
+    if(progress.students.length <= 1) return;
+    const name = progress.cur;
+    progress.students = progress.students.filter(function(n){ return n !== name; });
+    delete progress.done[name];
+    progress.cur = progress.students[0];
+    saveProgress();
+    renderProgress(); renderSongs(); renderScore();
+  });
+}
+
+function renderProblems(){
+  const box = document.getElementById("songProblems");
+  if(!SONG_PROBLEMS.length){ box.hidden = true; return; }
+  SONG_PROBLEMS.forEach(function(m){ console.warn("曲譜檢查：" + m); });
+  box.hidden = false;
+  box.innerHTML = '<b>曲譜檢查發現 '+SONG_PROBLEMS.length+' 個問題</b>（請修改程式裡的曲譜資料）：<ul>' +
+    SONG_PROBLEMS.map(function(m){ return '<li>'+m+'</li>'; }).join("") + '</ul>';
+}
+
+function renderRangeButtons(){
+  const row = document.getElementById("rangeRow");
+  const total = SONGS[state.song].bars.length;
+  const groups = Math.ceil(total / 4);
+  let html = '<button class="btn small" id="btnAllBars">整首</button>';
+  for(let g=0; g<groups; g++){
+    const a = g*4, b = Math.min(total-1, a+3);
+    html += '<button class="btn small" data-a="'+a+'" data-b="'+b+'">'+(a+1)+'–'+(b+1)+'</button>';
+  }
+  html += '<button class="btn small" id="btnClearBars">清除</button>';
+  row.innerHTML = html;
+
+  row.querySelector("#btnAllBars").addEventListener("click", function(){
+    state.selA = null; state.selB = null;
+    updateSelectionVisual();
+    if(player || pausedAt !== null) stopPlayback();
+  });
+  row.querySelector("#btnClearBars").addEventListener("click", function(){
+    state.selA = null; state.selB = null;
+    updateSelectionVisual();
+    if(player || pausedAt !== null) stopPlayback();
+  });
+  row.querySelectorAll("[data-a]").forEach(function(b){
+    b.addEventListener("click", function(){
+      state.selA = parseInt(b.getAttribute("data-a"),10);
+      state.selB = parseInt(b.getAttribute("data-b"),10);
+      updateSelectionVisual();
+      if(player || pausedAt !== null) stopPlayback();
+    });
+  });
+}
+
+const MODES = [
+  {id:"listen", label:"聽示範", voices:{right:true, left:true, accomp:true, click:false}},
+  {id:"right",  label:"練右手", voices:{right:true, left:false, accomp:false, click:true}},
+  {id:"left",   label:"練左手", voices:{right:false, left:true, accomp:false, click:true}},
+  {id:"both",   label:"雙手合奏", voices:{right:true, left:true, accomp:false, click:true}},
+  {id:"ekey",   label:"配電子琴", voices:{right:false, left:false, accomp:false, click:true}}
+];
+
+function renderModes(){
+  const row = document.getElementById("modeRow");
+  row.innerHTML = MODES.map(function(m){
+    return '<button class="btn small" data-mode="'+m.id+'" aria-pressed="'+(state.mode===m.id)+'">'+m.label+'</button>';
+  }).join("");
+  row.querySelectorAll("[data-mode]").forEach(function(b){
+    b.addEventListener("click", function(){
+      const id = b.getAttribute("data-mode");
+      state.mode = id;
+      const def = MODES.find(function(m){ return m.id === id; });
+      state.voices = Object.assign({}, def.voices);
+      renderModes();
+      renderVoices();
+      applyMix();
+      saveState();
+    });
+  });
+}
+
+function renderVoices(){
+  const row = document.getElementById("voiceRow");
+  const items = [
+    {k:"right", label:"右手旋律"},
+    {k:"left", label:"左手和弦音"},
+    {k:"accomp", label:"自動伴奏"},
+    {k:"click", label:"拍子聲"}
+  ];
+  row.innerHTML = items.map(function(it){
+    return '<button class="btn small" data-voice="'+it.k+'" aria-pressed="'+(!!state.voices[it.k])+'">'+it.label+'</button>';
+  }).join("");
+  row.querySelectorAll("[data-voice]").forEach(function(b){
+    b.addEventListener("click", function(){
+      const k = b.getAttribute("data-voice");
+      state.voices[k] = !state.voices[k];
+      renderVoices();
+      applyMix();
+      saveState();
+    });
+  });
+}
+
+const MIX_CHANNELS = [
+  {k:"melody", label:"右手旋律"},
+  {k:"chord",  label:"左手和弦音"},
+  {k:"accomp", label:"伴奏鋼琴"},
+  {k:"drums",  label:"鼓組"},
+  {k:"click",  label:"拍子聲"},
+  {k:"master", label:"總音量"}
+];
+
+function renderMixer(){
+  const box = document.getElementById("mixer");
+  box.innerHTML = MIX_CHANNELS.map(function(c){
+    return '<div class="ch">' +
+      '<button class="ch-name'+(state.muted[c.k]?' muted':'')+'" data-mute="'+c.k+'" aria-pressed="'+(!!state.muted[c.k])+'" title="點一下靜音">'+c.label+'</button>' +
+      '<input type="range" min="0" max="100" step="1" value="'+state.mix[c.k]+'" data-mix="'+c.k+'" aria-label="'+c.label+'音量">' +
+      '<span class="ch-val" data-val="'+c.k+'">'+state.mix[c.k]+'</span>' +
+      '</div>';
+  }).join("");
+
+  box.querySelectorAll("[data-mix]").forEach(function(r){
+    r.addEventListener("input", function(){
+      const k = r.getAttribute("data-mix");
+      state.mix[k] = parseInt(r.value,10);
+      box.querySelector('[data-val="'+k+'"]').textContent = r.value;
+      applyMix();
+      saveState();
+    });
+  });
+
+  box.querySelectorAll("[data-mute]").forEach(function(b){
+    b.addEventListener("click", function(){
+      const k = b.getAttribute("data-mute");
+      state.muted[k] = !state.muted[k];
+      b.classList.toggle("muted", state.muted[k]);
+      b.setAttribute("aria-pressed", state.muted[k] ? "true" : "false");
+      applyMix();
+      saveState();
+    });
+  });
+}
+
+function renderFollowButton(){
+  const btn = document.getElementById("btnFollow");
+  if(!btn) return;
+  btn.setAttribute("aria-pressed", state.follow ? "true" : "false");
+  btn.textContent = state.follow ? "📍 跟隨樂譜" : "📍 自由瀏覽";
+  btn.title = state.follow ? "播放時自動捲動到目前小節（點一下關閉）" : "播放時不自動捲動（點一下開啟）";
+}
+
+/* 事件 */
+function bindControls(){
+  document.getElementById("btnOnce").addEventListener("click", function(){
+    if(player){
+      if(player.mode === "once"){ stopPlayback(); return; }
+      stopPlayback();
+      startPlayback("once");
+      return;
+    }
+    if(pausedAt !== null){ pausedMode = "once"; resumePlayback(); return; }
+    startPlayback("once");
+  });
+
+  document.getElementById("btnLoop").addEventListener("click", function(){
+    if(player){
+      if(player.mode === "loop"){ stopPlayback(); return; }
+      stopPlayback();
+      startPlayback("loop");
+      return;
+    }
+    if(pausedAt !== null){ pausedMode = "loop"; resumePlayback(); return; }
+    startPlayback("loop");
+  });
+
+  document.getElementById("btnPause").addEventListener("click", function(){
+    if(pausedAt !== null) resumePlayback();
+    else if(player) pausePlayback();
+  });
+
+  document.getElementById("btnFollow").addEventListener("click", function(){
+    state.follow = !state.follow;
+    renderFollowButton();
+    saveState();
+  });
+
+  const bpm = document.getElementById("bpmRange");
+  bpm.value = state.bpm;
+  document.getElementById("bpmValue").textContent = "♩ = " + state.bpm;
+  bpm.addEventListener("input", function(){
+    state.bpm = parseInt(bpm.value,10);
+    document.getElementById("bpmValue").textContent = "♩ = " + state.bpm;
+    saveState();
+  });
+  bpm.addEventListener("change", function(){
+    ladderStartBpm = null;
+    lastLadder = null;
+    renderLadderInfo();
+    if(player){
+      const mode = player.mode;
+      stopPlayback();
+      startPlayback(mode);
+    }
+  });
+
+  const lb = document.getElementById("btnLadder");
+  const ls = document.getElementById("ladderStep");
+  const lm = document.getElementById("ladderMax");
+  let maxOpts = "";
+  for(let v=64; v<=120; v+=4) maxOpts += '<option value="'+v+'">♩ = '+v+'</option>';
+  lm.innerHTML = maxOpts;
+  function syncLadder(){
+    lb.setAttribute("aria-pressed", state.ladder.on ? "true" : "false");
+    ls.value = String(state.ladder.step);
+    lm.value = String(state.ladder.max);
+    ls.disabled = lm.disabled = !state.ladder.on;
+    renderLadderInfo();
+  }
+  lb.addEventListener("click", function(){
+    state.ladder.on = !state.ladder.on;
+    if(!state.ladder.on) endLadder();
+    else if(player && player.loop && ladderStartBpm === null) ladderStartBpm = state.bpm;
+    syncLadder(); saveState();
+  });
+  ls.addEventListener("change", function(){ state.ladder.step = parseInt(ls.value,10); syncLadder(); saveState(); });
+  lm.addEventListener("change", function(){ state.ladder.max = parseInt(lm.value,10); syncLadder(); saveState(); });
+  syncLadder();
+
+  const rs = document.getElementById("rhythmSel");
+  rs.value = state.rhythm;
+  rs.addEventListener("change", function(){
+    state.rhythm = rs.value;
+    saveState();
+    if(player){
+      const mode = player.mode;
+      stopPlayback();
+      startPlayback(mode);
+    }
+  });
+
+  const sw = document.getElementById("sustainSw");
+  sw.setAttribute("aria-pressed", state.sustain ? "true" : "false");
+  sw.addEventListener("click", function(){
+    state.sustain = !state.sustain;
+    sw.setAttribute("aria-pressed", state.sustain ? "true" : "false");
+    saveState();
+  });
+
+  const KEYMAP = {
+    a:"C4", s:"D4", d:"E4", f:"F4", g:"G4", h:"A4", j:"B4",
+    z:"C4", x:"F4", c:"G4"
+  };
+  const held = {};
+  document.addEventListener("keydown", function(ev){
+    const tag = (ev.target.tagName || "").toLowerCase();
+    if(tag === "input" || tag === "select" || tag === "textarea") return;
+
+    const k = ev.key.toLowerCase();
+    if(ev.code === "Space"){
+      ev.preventDefault();
+      if(player) pausePlayback();
+      else if(pausedAt !== null) resumePlayback();
+      else startPlayback("loop");
+      return;
+    }
+    if(KEYMAP[k] && !held[k]){
+      held[k] = true;
+      ev.preventDefault();
+      pressKeyByNote(KEYMAP[k]);
+    }
+  });
+  document.addEventListener("keyup", function(ev){
+    held[ev.key.toLowerCase()] = false;
+  });
+
+  let resizeTimer = 0;
+  window.addEventListener("resize", function(){
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(function(){
+      if(player || pausedAt !== null) stopPlayback();
+      renderScore();
+    }, 180);
+  });
+}
+
+function boot(){
+  loadState();
+  loadProgress();
+  renderProblems();
+  bindProgress();
+  renderProgress();
+  renderSolfegeStrip();
+  renderSongs();
+  renderRangeButtons();
+  renderModes();
+  renderVoices();
+  renderMixer();
+  renderFollowButton();
+  renderHands();
+  renderKeyboard();
+  bindControls();
+
+  const start = function(){
+    renderScore();
+    updateRangeInfo();
+    updatePlayButtons();
+  };
+  if(document.fonts && document.fonts.ready){
+    document.fonts.ready.then(start).catch(start);
+    setTimeout(start, 400);
+  }else{
+    start();
+  }
+
+  applyMix();
+}
+
+if(document.readyState === "loading"){
+  document.addEventListener("DOMContentLoaded", boot);
+}else{
+  boot();
+}
+
+})();
+</script>
+</body>
+</html>
