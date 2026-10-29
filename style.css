@@ -111,7 +111,7 @@ main{ max-width:1100px; margin:0 auto; padding:0 16px 20px; }
   padding:8px 14px; cursor:pointer; font-weight:500;
   transition:background .15s, border-color .15s, color .15s; white-space:nowrap;
 }
-.btn:hover{ border-color:var(--accent); }
+@media (hover:hover){ .btn:hover{ border-color:var(--accent); } }
 .btn[aria-pressed="true"]{ background:var(--accent); border-color:var(--accent); color:#fff; }
 .btn.primary{ font-weight:700; }
 .btn.small{ padding:5px 10px; font-size:13px; }
@@ -322,25 +322,6 @@ details.card[open] > summary::before{ content:"▾ "; }
 .tips-body ul{ margin:4px 0; padding-left:1.2em; }
 .tips-body li{ margin:3px 0; }
 
-/* ===== 樂譜修改器 ===== */
-.editor-row{
-  display:flex; flex-wrap:wrap; gap:6px; align-items:center;
-  margin-bottom:8px; padding:6px 8px; font-size:13px;
-  background:var(--panel2); border-radius:8px;
-}
-.editor-row > span:first-child{ flex:0 0 70px; font-weight:700; color:var(--muted); }
-.editor-row > input{
-  flex:1 1 200px; min-width:0;
-  font-family:"Consolas","Menlo",monospace; font-size:13px;
-  padding:5px 8px;
-  border:2px solid var(--line); border-radius:8px;
-  background:var(--panel); color:var(--text);
-}
-.editor-row > input:focus{ border-color:var(--accent); outline:none; }
-.editor-row > select{ flex:0 0 auto; font-size:13px; padding:4px 6px; }
-.editor-badge{ font-size:11px; color:var(--do); font-weight:700; }
-.editor-ok{ color:var(--fa); font-weight:700; }
-.editor-err{ color:var(--do); font-weight:700; }
 .custom-tag{ font-size:11px; font-weight:700; color:#fff; background:var(--la); border-radius:6px; padding:1px 7px; }
 
 @media (prefers-reduced-motion: reduce){
@@ -358,11 +339,6 @@ body[data-role="student"] .bar-done{ display:none; }
 }
 .teacher-tools .ctrl-row{ flex-wrap:wrap; }
 .teacher-tools .tool-note{ font-size:13px; color:var(--muted); margin:4px 0 10px; line-height:1.6; }
-.draft-banner{
-  border:2px solid var(--la); border-radius:10px; padding:8px 12px; margin-bottom:10px;
-  font-size:14px; background:var(--panel2);
-}
-.draft-banner b{ color:var(--la); }
 .file-btn{ position:relative; overflow:hidden; }
 .file-btn input{ position:absolute; inset:0; opacity:0; cursor:pointer; }
 .app-version{
@@ -370,3 +346,20 @@ body[data-role="student"] .bar-done{ display:none; }
   margin:8px 0 150px;
 }
 .app-version a{ color:var(--muted); }
+
+/* ===== 平板／觸控螢幕 ===== */
+.keys, .wkey, .bkey{ touch-action:none; -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; }
+@media (min-width:700px){ .keys{ height:104px; } }
+@media (pointer:coarse){
+  .btn{ min-height:48px; }
+  .btn.small{ min-height:44px; padding:8px 16px; }
+  select{ min-height:44px; font-size:15px; }
+  input[type=range]{ min-height:44px; }
+  .switch{ width:68px; height:44px; }
+  .switch::after{ width:34px; height:34px; }
+  .switch[aria-pressed="true"]::after{ left:28px; }
+  .mixer .ch-name{ min-height:44px; padding:10px 12px; }
+  .ctrl-row, .range-row, .mode-row, .voice-row{ gap:10px; }
+  .bar-check .ck-hit{ r:15; }
+  details.card > summary{ min-height:44px; display:flex; align-items:center; }
+}
