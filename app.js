@@ -19,7 +19,7 @@ const SEMI = {C:0, D:2, E:4, F:5, G:7, A:9, B:11};
 const DATA = window.SONG_DATA || { lessons:[], songs:[] };
 const LESSONS = DATA.lessons;
 const SONGS = DATA.songs;
-const APP_VERSION = "1.1";
+const APP_VERSION = "1.3";
 const ROLE = document.body.getAttribute("data-role");
 const IS_TEACHER = ROLE === "teacher";
 /* 左手伴奏方式：auto＝依曲子設定、single＝全部單音、arp＝全部琶音 */
@@ -97,7 +97,7 @@ function reparseAll(){
   SONGS.forEach(function(sg){ parseSongForDraw(sg, false); });
 }
 
-/* 解析一首曲子（給初始化和樂譜修改器套用後重算用） */
+/* 解析一首曲子（給初始化和重算用） */
 function parseSongForDraw(song, collectProblems){
   const problems = [];
   song.parsed = song.bars.map(function(b, bi){
@@ -135,8 +135,9 @@ const state = {
   rhythm: "march",
   mode: "listen",
   follow: true,
-  solfegeSys: "do",
+  solfegeSys: "zhuyin",
   showPills: true,
+  showKeys: true,
   voices: { right:true, left:true, accomp:true, click:false },
   mix: { melody:70, chord:65, accomp:55, drums:50, click:45, master:70 },
   muted:{ melody:false, chord:false, accomp:false, drums:false, click:false, master:false },
@@ -188,7 +189,7 @@ function loadState(){
     if(typeof o.rhythm === "string") state.rhythm = o.rhythm;
     if(typeof o.follow === "boolean") state.follow = o.follow;
     if(typeof o.showPills === "boolean") state.showPills = o.showPills;
-    if(o.solfegeSys === "zhuyin" || o.solfegeSys === "do") state.solfegeSys = o.solfegeSys;
+    if(typeof o.showKeys === "boolean") state.showKeys = o.showKeys;
     if(o.mix && typeof o.mix === "object"){
       Object.keys(state.mix).forEach(function(k){
         if(typeof o.mix[k] === "number") state.mix[k] = Math.min(100, Math.max(0, o.mix[k]));
@@ -212,7 +213,7 @@ function saveState(){
   try{
     localStorage.setItem(LS_KEY, JSON.stringify({
       bpm: state.bpm, rhythm: state.rhythm, follow: state.follow,
-      solfegeSys: state.solfegeSys, showPills: state.showPills,
+      showPills: state.showPills, showKeys: state.showKeys,
       mix: state.mix, voices: state.voices, sustain: state.sustain,
       ladder: state.ladder, arp: arpMode
     }));
@@ -240,6 +241,7 @@ function initAudio(){
   noiseBuf = ac.createBuffer(1, len, ac.sampleRate);
   const d = noiseBuf.getChannelData(0);
   for(let i=0;i<len;i++) d[i] = Math.random()*2 - 1;
+  applyMix();
 }
 function resumeAudio(){
   if(!ac) initAudio();
@@ -285,13 +287,44 @@ function applyMix(){
 }
 
 function trackSource(node, stopAt){
-  activeSources.push({node:node, stopAt:stopAt});
-  if(activeSources.length > 500) activeSources = activeSources.slice(-400);
+  const rec = {node:node, stopAt:stopAt};
+  activeSources.push(rec);
+  node.onended = function(){
+    const i = activeSources.indexOf(rec);
+    if(i >= 0) activeSources.splice(i, 1);
+  };
+}
+/* 把五條聲音線路（右手、左手、伴奏、鼓、拍子）整個換新：
+   舊的線路從總音量拔掉，不管還有多少音排在裡面，都會立刻變安靜。 */
+function rebuildChannels(){
+  if(!ac || !audio.master) return;
+  ["melody","chord","accomp","drums","click"].forEach(function(k){
+    try{ if(audio[k]) audio[k].disconnect(); }catch(e){}
+    const g = ac.createGain();
+    g.connect(audio.master);
+    audio[k] = g;
+  });
+  applyMix();
 }
 function stopAllSources(){
   const now = ac ? ac.currentTime : 0;
   activeSources.forEach(function(s){ try{ s.node.stop(now); }catch(e){} });
   activeSources = [];
+  rebuildChannels();
+}
+/* 強制停止：關掉整個聲音系統，下次按播放或琴鍵才重新開一個新的 */
+function killAllSound(){
+  stopPlayback();
+  const old = ac;
+  ac = null; noiseBuf = null; activeSources = [];
+  try{ if(old && old.state !== "closed"){ const pr = old.close(); if(pr && pr.catch) pr.catch(function(){}); } }catch(e){}
+  keyEls.forEach(function(el){ el.classList.remove("pressed","hint"); });
+  resetNowChord();
+  document.getElementById("ncNext").textContent = "已強制停止所有聲音";
+  setTimeout(function(){
+    const el = document.getElementById("ncNext");
+    if(el && el.textContent === "已強制停止所有聲音") el.textContent = "下一個：—";
+  }, 3500);
 }
 
 function pianoNote(midi, t, dur, dest){
@@ -735,6 +768,7 @@ function updateSelectionVisual(){
 }
 
 function barClick(bi){
+  if(player || pausedAt !== null) return;
   if(state.selA === null){ state.selA = bi; state.selB = bi; }
   else{
     const a = state.selA, b = state.selB === null ? state.selA : state.selB;
@@ -775,21 +809,44 @@ function updateRangeInfo(){
   document.getElementById("rangeInfo").innerHTML = txt;
 }
 
-/* 鍵盤 */
-const WHITE_KEYS = ["C4","D4","E4","F4","G4","A4","B4"];
-const BLACK_KEYS = [
+/* 鍵盤：右手一個、左手一個 */
+const RIGHT_WHITE = ["C4","D4","E4","F4","G4","A4","B4"];
+const RIGHT_BLACK = [
   {name:"C#4", after:0},{name:"D#4", after:1},{name:"F#4", after:3},
   {name:"G#4", after:4},{name:"A#4", after:5}
 ];
+const LEFT_WHITE = ["A2","B2","C3","D3","E3","F3","G3","A3"];
+const LEFT_BLACK = [
+  {name:"A#2", after:0},{name:"C#3", after:2},{name:"D#3", after:3},
+  {name:"F#3", after:5},{name:"G#3", after:6}
+];
+/* 左手和弦鍵：按一個鍵就彈出整個和弦 */
+const LEFT_CHORD_KEY = {C3:"C", F3:"F", G3:"G", A2:"A"};
 const keyEls = new Map();
 
-function renderKeyboard(){
-  const wrap = document.getElementById("keys");
+/* 學生按鍵：手指按住的時候亮橘色，放開就熄 */
+function bindKeyPress(el, name){
+  let downAt = 0, offTimer = 0;
+  const off = function(){
+    if(!el.classList.contains("tap")) return;
+    const wait = Math.max(0, 200 - (Date.now() - downAt));   /* 很快的點一下也要看得到亮光 */
+    clearTimeout(offTimer);
+    offTimer = setTimeout(function(){ el.classList.remove("tap"); }, wait);
+  };
+  el.addEventListener("pointerdown", function(ev){
+    ev.preventDefault();
+    clearTimeout(offTimer); downAt = Date.now();
+    el.classList.add("tap");
+    pressKeyByNote(name, true);
+  });
+  ["pointerup","pointercancel","pointerleave","lostpointercapture"].forEach(function(t){ el.addEventListener(t, off); });
+}
+function buildKeys(wrapId, whites, blacks, hand){
+  const wrap = document.getElementById(wrapId);
   wrap.innerHTML = "";
-  keyEls.clear();
-  const n = WHITE_KEYS.length;
+  const n = whites.length;
   const unit = 100 / n;
-  WHITE_KEYS.forEach(function(name){
+  whites.forEach(function(name){
     const pc = name[0];
     const btn = document.createElement("div");
     btn.className = "wkey";
@@ -797,50 +854,75 @@ function renderKeyboard(){
     btn.setAttribute("tabindex", "-1");
     btn.setAttribute("data-note", name);
     btn.setAttribute("aria-label", sol(pc) + " " + name);
-    const isLeftChord = (pc === "C" || pc === "F" || pc === "G" || pc === "A");
-    const leftHtml = isLeftChord
-      ? '<span class="wk-left show" style="--c:var('+CHORD_VAR[pc]+')">左'+circleNum(LEFT_FINGER[pc])+'</span>'
-      : '<span class="wk-left">.</span>';
-    btn.innerHTML = leftHtml + '<span class="wk-finger">'+DEFAULT_FINGER[pc]+'</span>';
-    btn.addEventListener("pointerdown", function(ev){ ev.preventDefault(); pressKeyByNote(name); });
+    let top, bottom;
+    if(hand === "R"){
+      top = '<span class="wk-sol" style="--c:var('+SOL_VAR[pc]+')">'+sol(pc)+'</span>';
+      bottom = '<span class="wk-finger">'+DEFAULT_FINGER[pc]+'</span>';
+    }else if(LEFT_CHORD_KEY[name]){
+      const ch = LEFT_CHORD_KEY[name];
+      top = '<span class="wk-sol" style="--c:var('+CHORD_VAR[ch]+')">'+cname(ch)+'</span>';
+      bottom = '<span class="wk-finger">'+circleNum(LEFT_FINGER[ch])+'</span>';
+    }else{
+      top = '<span class="wk-sol plain" style="--c:var('+SOL_VAR[pc]+')">'+sol(pc)+'</span>';
+      bottom = '<span class="wk-finger">&nbsp;</span>';
+    }
+    btn.innerHTML = top + bottom;
+    bindKeyPress(btn, name);
     wrap.appendChild(btn);
     keyEls.set(name, btn);
   });
   const bw = unit * 0.62;
-  BLACK_KEYS.forEach(function(bk){
+  blacks.forEach(function(bk){
     const el = document.createElement("div");
     el.className = "bkey";
     el.setAttribute("data-note", bk.name);
     el.style.width = bw + "%";
     el.style.left = ((bk.after+1)*unit - bw/2) + "%";
-    el.addEventListener("pointerdown", function(ev){ ev.preventDefault(); pressKeyByNote(bk.name); });
+    bindKeyPress(el, bk.name);
     wrap.appendChild(el);
     keyEls.set(bk.name, el);
   });
 }
+function renderKeyboard(){
+  keyEls.clear();
+  buildKeys("keysR", RIGHT_WHITE, RIGHT_BLACK, "R");
+  buildKeys("keysL", LEFT_WHITE, LEFT_BLACK, "L");
+}
 
-function pressKeyByNote(name){
+function pressKeyByNote(name, held){
   resumeAudio();
   const m = /^([A-G])(#?)(\d)$/.exec(name);
   if(!m) return;
   const pc = m[1], sharp = m[2] === "#", oct = parseInt(m[3],10);
   const midi = pitchToMidi(pc, oct) + (sharp ? 1 : 0);
   const t = ac.currentTime + 0.01;
-  pianoNote(midi, t, 0.5, audio.melody);
-  if(pc === "C" || pc === "F" || pc === "G" || pc === "A"){
-    const chordMidi = {C:[48,52,55], F:[53,57,60], G:[55,59,62], A:[57,60,64]}[pc];
-    chordMidi.forEach(function(mm){ pianoNote(mm, t, 0.5, audio.chord); });
+  if(oct >= 4){
+    pianoNote(midi, t, 0.5, audio.melody);
+  }else if(LEFT_CHORD_KEY[name]){
+    const info = chordMidi(LEFT_CHORD_KEY[name]);
+    info.tones.forEach(function(mm){ pianoNote(mm, t, 0.6, audio.chord); });
+    pianoNote(info.bass, t, 0.6, audio.chord);
+  }else{
+    pianoNote(midi, t, 0.5, audio.chord);
   }
   const el = keyEls.get(name);
-  if(el){ el.classList.add("pressed"); setTimeout(function(){ el.classList.remove("pressed"); }, 150); }
+  if(el && !held){ el.classList.add("tap"); setTimeout(function(){ el.classList.remove("tap"); }, 260); }
+}
+
+function renderKeysToggle(){
+  const btn = document.getElementById("btnKeys");
+  document.body.classList.toggle("kb-hidden", !state.showKeys);
+  if(!btn) return;
+  btn.setAttribute("aria-pressed", state.showKeys ? "true" : "false");
+  btn.textContent = state.showKeys ? "🎹 隱藏鍵盤" : "🎹 顯示鍵盤";
 }
 
 function renderHands(){
   const hL = document.getElementById("handL");
   const hR = document.getElementById("handR");
-  hL.innerHTML = '<span class="hlabel">左手</span>' +
-    [1,2,3,4,5].map(function(i){ return '<div class="finger" data-hand="L" data-f="'+i+'">'+i+'</div>'; }).join("");
-  hR.innerHTML = '<span class="hlabel">右手</span>' +
+  hL.innerHTML = '<span class="hlabel">左手 · 和弦鍵盤</span>' +
+    [5,4,3,2,1].map(function(i){ return '<div class="finger" data-hand="L" data-f="'+i+'">'+i+'</div>'; }).join("");
+  hR.innerHTML = '<span class="hlabel">右手 · 旋律鍵盤</span>' +
     [1,2,3,4,5].map(function(i){ return '<div class="finger" data-hand="R" data-f="'+i+'">'+i+'</div>'; }).join("");
 }
 function clearHands(){
@@ -858,7 +940,36 @@ let pausedAt = null;
 let pausedMode = null;
 let lastScrolledBar = -1;
 
+function hideCount(){
+  const el = document.getElementById("countOverlay");
+  if(el){ el.hidden = true; el.removeAttribute("data-n"); }
+}
+function showCount(n, barIndex){
+  const wrap = document.getElementById("scoreWrap");
+  if(!wrap) return;
+  let el = document.getElementById("countOverlay");
+  if(!el){
+    el = document.createElement("div");
+    el.id = "countOverlay"; el.className = "count-overlay";
+    el.setAttribute("aria-live","assertive");
+    el.innerHTML = '<span class="co-label">預備</span><span class="co-num"></span>';
+    wrap.appendChild(el);
+  }
+  const hit = document.querySelector('.bar-hit[data-bar="'+barIndex+'"]');
+  if(hit){
+    const wr = wrap.getBoundingClientRect(), hr = hit.getBoundingClientRect();
+    el.style.left = (hr.left - wr.left + hr.width/2) + "px";
+    el.style.top = (hr.top - wr.top + hr.height/2) + "px";
+  }
+  el.hidden = false;
+  if(el.getAttribute("data-n") !== String(n)){
+    el.setAttribute("data-n", String(n));
+    el.querySelector(".co-num").textContent = String(n);
+    el.classList.remove("pulse"); void el.offsetWidth; el.classList.add("pulse");
+  }
+}
 function clearHighlights(){
+  hideCount();
   scoreEls.bars.forEach(function(b){ b.classList.remove("on"); });
   scoreEls.noteList.forEach(function(n){ n.classList.remove("is-on"); });
   keyEls.forEach(function(el){ el.classList.remove("pressed","hint"); });
@@ -880,13 +991,31 @@ function updatePlayButtons(){
   else if(playing){ pause.disabled = false; pause.textContent = "⏸ 暫停"; }
   else{ pause.disabled = true; pause.textContent = "⏸ 暫停"; }
   pause.setAttribute("aria-pressed", "false");
+  const stop = document.getElementById("btnStop");
+  if(stop) stop.disabled = !(playing || pausedAt !== null);
+  syncLocks();
+}
+/* 播放中（含暫停中）把「練習設定」和「更多設定」裡的按鈕全部鎖住 */
+function syncLocks(){
+  const locked = !!player || pausedAt !== null;
+  document.querySelectorAll(
+    "#practiceCard button, #practiceCard select, #practiceCard input, " +
+    "#moreSettings .more-body button, #moreSettings .more-body select, #moreSettings .more-body input"
+  ).forEach(function(el){ el.disabled = locked; });
+  if(!locked){
+    const ls = document.getElementById("ladderStep"), lm = document.getElementById("ladderMax");
+    if(ls) ls.disabled = !state.ladder.on;
+    if(lm) lm.disabled = !state.ladder.on;
+  }
+  document.querySelectorAll(".lock-note").forEach(function(n){ n.hidden = !locked; });
+  document.body.classList.toggle("is-locked", locked);
 }
 function stopPlayback(){
   if(player){ player.stopped = true; }
   endLadder();
   player = null; pausedAt = null; pausedMode = null;
   if(rafId){ cancelAnimationFrame(rafId); rafId = 0; }
-  stopAllSources(); clearHighlights(); clearHands(); resetNowChord();
+  stopAllSources(); hideCount(); clearHighlights(); clearHands(); resetNowChord();
   updatePlayButtons(); updateRangeInfo();
 }
 function pausePlayback(){
@@ -976,13 +1105,13 @@ function scheduleRound(musicStart, beat, countInStart, countInBeats, fromBar){
         playEnd = Math.max(playEnd, segEnd + 0.25);
       }
       pianoNote(midi, t, playEnd - t, audio.melody);
-      const ev = { t: t, end: playEnd, midi: midi, hand:"right", bar: bi, idx: ni, fing: fing, pc: n.pc };
+      const ev = { t: t, end: playEnd, dispEnd: t + Math.max(0.08, durSec - 0.07), midi: midi, hand:"right", bar: bi, idx: ni, fing: fing, pc: n.pc };
       round.events.push(ev);
       barObj.notes.push(ev);
       t += durSec;
     });
     chordList.forEach(function(ch, ci){
-      scheduleAccomp(ch, tBar + ci*segLen*beat, beat);
+      scheduleAccomp(ch, tBar + ci*segLen*beat, beat, segLen);
     });
     bar.leftItems.forEach(function(it, li){
       const tI = tBar + it.beat*beat;
@@ -996,7 +1125,8 @@ function scheduleRound(musicStart, beat, countInStart, countInBeats, fromBar){
         });
         round.events.push({
           t: tI, end: leftEnd, midi: info.tones[0], hand:"left",
-          bar: bi, idx: li, fing: LEFT_FINGER[ch] || 5, pc: ch, chord: ch
+          bar: bi, idx: li, fing: LEFT_FINGER[ch] || 5, pc: ch, chord: ch,
+          keys: [ch + (LEFT_OCT[ch] || 3)]
         });
       }else{
         const segEnd = tBar + (Math.floor(it.beat / segLen + 1e-9) + 1) * segLen * beat;
@@ -1006,7 +1136,8 @@ function scheduleRound(musicStart, beat, countInStart, countInBeats, fromBar){
           t: tI, end: iEnd, midi: it.notes[0].midi, hand:"left",
           bar: bi, idx: li, fing: it.notes[0].f, pc: it.notes[0].pc, chord: ch,
           fings: it.notes.map(function(nt){ return nt.f; }),
-          pcs: it.notes.map(function(nt){ return nt.pc; })
+          pcs: it.notes.map(function(nt){ return nt.pc; }),
+          keys: it.notes.map(function(nt){ return nt.pc + nt.oct; })
         });
       }
     });
@@ -1017,26 +1148,32 @@ function scheduleRound(musicStart, beat, countInStart, countInBeats, fromBar){
   return round;
 }
 
-function scheduleAccomp(ch, t0, beat){
+function scheduleAccomp(ch, t0, beat, segBeats){
   const info = chordMidi(ch);
   const tones = info.tones, bass = info.bass;
   const dest = audio.accomp, drumDest = audio.drums;
+  const lim = segBeats || 4;                       /* 這個和弦佔幾拍（一小節兩個和弦＝2 拍） */
+  const room = function(off, want){ return Math.min(want, lim - off + 0.25); };  /* 不蓋到下一個和弦太多 */
   if(state.rhythm === "march"){
-    pianoNote(bass, t0, state.sustain ? beat*2.2 : beat*1.1, dest); kick(t0, drumDest);
-    pianoNote(tones[0], t0+beat, state.sustain ? beat*1.2 : beat*0.7, dest); hat(t0+beat, drumDest, 0.07, 0.18);
-    pianoNote(bass + 7, t0+2*beat, state.sustain ? beat*2.0 : beat*1.0, dest); kick(t0+2*beat, drumDest);
-    pianoNote(tones[0], t0+3*beat, state.sustain ? beat*1.2 : beat*0.7, dest); hat(t0+3*beat, drumDest, 0.07, 0.18);
+    if(lim > 0){ pianoNote(bass, t0, beat*room(0, state.sustain ? 2.2 : 1.1), dest); kick(t0, drumDest); }
+    if(lim > 1){ pianoNote(tones[0], t0+beat, beat*room(1, state.sustain ? 1.2 : 0.7), dest); hat(t0+beat, drumDest, 0.07, 0.18); }
+    if(lim > 2){ pianoNote(bass + 7, t0+2*beat, beat*room(2, state.sustain ? 2.0 : 1.0), dest); kick(t0+2*beat, drumDest); }
+    if(lim > 3){ pianoNote(tones[0], t0+3*beat, beat*room(3, state.sustain ? 1.2 : 0.7), dest); hat(t0+3*beat, drumDest, 0.07, 0.18); }
   }else if(state.rhythm === "lyric"){
     const seq = [bass, tones[1], tones[2], bass+12, tones[2], tones[1], bass, tones[2]];
     const eighth = beat/2;
-    seq.forEach(function(m, i){ pianoNote(m, t0 + i*eighth, state.sustain ? beat*1.6 : eighth*1.5, dest); });
+    seq.forEach(function(m, i){
+      if(i >= lim*2) return;
+      pianoNote(m, t0 + i*eighth, beat*room(i/2, state.sustain ? 1.6 : 0.75), dest);
+    });
     hat(t0, drumDest, 0.05, 0.07);
   }else{
     const eighth = beat/2;
     for(let i=0;i<8;i++){
+      if(i >= lim*2) break;
       const t = t0 + i*eighth;
-      if(i === 0 || i === 4){ pianoNote(bass, t, state.sustain ? beat*1.2 : eighth*1.4, dest); kick(t, drumDest); }
-      else if(i === 2 || i === 6){ tones.forEach(function(m){ pianoNote(m, t, state.sustain ? beat*0.9 : eighth*1.2, dest); }); }
+      if(i === 0 || i === 4){ pianoNote(bass, t, beat*room(i/2, state.sustain ? 1.2 : 0.7), dest); kick(t, drumDest); }
+      else if(i === 2 || i === 6){ tones.forEach(function(m){ pianoNote(m, t, beat*room(i/2, state.sustain ? 0.9 : 0.6), dest); }); }
       else { pianoNote(tones[(i%3)], t, eighth*0.9, dest); }
       hat(t, drumDest, 0.045, i%2===0 ? 0.13 : 0.07);
     }
@@ -1075,7 +1212,14 @@ function endLadder(){
   setBpmUI(); renderLadderInfo();
 }
 
+let lastMode = "once";
+function restartPlayback(){
+  const mode = player ? player.mode : (pausedMode || lastMode);
+  stopPlayback();
+  startPlayback(mode);
+}
 function startPlayback(mode, isResume, fromBar){
+  lastMode = mode;
   resumeAudio();
   if(player){ player.stopped = true; }
   if(rafId){ cancelAnimationFrame(rafId); rafId = 0; }
@@ -1134,10 +1278,26 @@ function updatePlaybackVisual(now){
       document.getElementById("ncValue").style.color = "var(--accent)";
       document.getElementById("ncLeft").textContent = "預備拍";
       document.getElementById("ncNext").textContent = "下一個：—";
+      const firstBar = r0.bars.length ? r0.bars[0].index : currentRange()[0];
       clearHighlights(); clearHands();
+      showCount(remain, firstBar);
+      scoreEls.bars.forEach(function(el){
+        if(parseInt(el.getAttribute("data-hlbar"),10) === firstBar) el.classList.add("on");
+      });
+      if(state.follow && lastScrolledBar !== firstBar){
+        lastScrolledBar = firstBar;
+        const hit = document.querySelector('.bar-hit[data-bar="'+firstBar+'"]');
+        if(hit && hit.ownerSVGElement){
+          const rr = hit.ownerSVGElement.getBoundingClientRect();
+          if(rr.top < 130 || rr.bottom > window.innerHeight - 240){
+            hit.ownerSVGElement.scrollIntoView({behavior:"smooth", block:"center"});
+          }
+        }
+      }
       return;
     }
   }
+  hideCount();
   if(!curRound){ clearHighlights(); return; }
   let barObj = null;
   for(let i=0;i<curRound.bars.length;i++){
@@ -1160,15 +1320,14 @@ function updatePlaybackVisual(now){
       }
     }
   }
-  let curNote = null, curLeft = null, nextNote = null;
+  let curNote = null, curLeft = null;
   for(let i=0;i<curRound.events.length;i++){
     const ev = curRound.events[i];
     if(ev.type === "count") continue;
-    if(now >= ev.t && now < ev.end){
+    if(now >= ev.t && now < (ev.dispEnd || ev.end)){
       if(ev.hand === "left"){ curLeft = ev; }
       if(!curNote || ev.hand === "right") curNote = ev;
     }
-    if(ev.t > now && !nextNote) nextNote = ev;
   }
   const curRight = (curNote && curNote.hand === "right") ? curNote : null;
   scoreEls.noteList.forEach(function(n){ n.classList.remove("is-on"); });
@@ -1182,15 +1341,11 @@ function updatePlaybackVisual(now){
     const el = keyEls.get(midiToName(curNote.midi));
     if(el) el.classList.add("pressed");
   }
-  if(curLeft && !curRight){
-    (curLeft.pcs || [curLeft.pc]).forEach(function(pc){
-      const el = keyEls.get(pc + "4");
+  if(curLeft && curLeft.keys){
+    curLeft.keys.forEach(function(k){
+      const el = keyEls.get(k);
       if(el) el.classList.add("pressed");
     });
-  }
-  if(nextNote && nextNote.hand === "right"){
-    const el = keyEls.get(midiToName(nextNote.midi));
-    if(el) el.classList.add("hint");
   }
   const chordNow = chordForBar(barObj.index, now, curRound);
   const ncValue = document.getElementById("ncValue");
@@ -1232,17 +1387,6 @@ function renderSolfegeStrip(){
   document.getElementById("solfegeStrip").innerHTML = order.map(function(pc){
     return '<span class="sf" style="--c:var('+SOL_VAR[pc]+')">'+sol(pc)+'</span>';
   }).join("");
-}
-function renderSolfegeBtn(){
-  const btn = document.getElementById("btnSolfege");
-  if(!btn) return;
-  if(state.solfegeSys === "zhuyin"){
-    btn.textContent = "注音 ㄉㄡ ㄖㄨㄟ ㄇㄧ（點一下切唱名）";
-    btn.setAttribute("aria-pressed", "true");
-  }else{
-    btn.textContent = "唱名 Do Re Mi（點一下切注音）";
-    btn.setAttribute("aria-pressed", "false");
-  }
 }
 function renderPillBtn(){
   const btn = document.getElementById("btnPill");
@@ -1372,7 +1516,7 @@ function renderProblems(){
   if(!SONG_PROBLEMS.length){ box.hidden = true; return; }
   SONG_PROBLEMS.forEach(function(m){ console.warn("曲譜檢查：" + m); });
   box.hidden = false;
-  box.innerHTML = '<b>曲譜檢查發現 '+SONG_PROBLEMS.length+' 個問題</b>（請老師用「樂譜修改器」修正 songs.js 後重新上傳）：<ul>' +
+  box.innerHTML = '<b>曲譜檢查發現 '+SONG_PROBLEMS.length+' 個問題</b>（請老師修正 songs.js 後重新上傳）：<ul>' +
     SONG_PROBLEMS.map(function(m){ return '<li>'+escHTML(m)+'</li>'; }).join("") + '</ul>';
 }
 
@@ -1387,6 +1531,7 @@ function renderRangeButtons(){
   }
   html += '<button class="btn small" id="btnClearBars">清除</button>';
   row.innerHTML = html;
+  syncLocks();
   row.querySelector("#btnAllBars").addEventListener("click", function(){
     state.selA = null; state.selB = null;
     updateSelectionVisual();
@@ -1419,6 +1564,7 @@ function renderModes(){
   row.innerHTML = MODES.map(function(m){
     return '<button class="btn small" data-mode="'+m.id+'" aria-pressed="'+(state.mode===m.id)+'">'+m.label+'</button>';
   }).join("");
+  syncLocks();
   row.querySelectorAll("[data-mode]").forEach(function(b){
     b.addEventListener("click", function(){
       const id = b.getAttribute("data-mode");
@@ -1440,6 +1586,7 @@ function renderVoices(){
   row.innerHTML = items.map(function(it){
     return '<button class="btn small" data-voice="'+it.k+'" aria-pressed="'+(!!state.voices[it.k])+'">'+it.label+'</button>';
   }).join("");
+  syncLocks();
   row.querySelectorAll("[data-voice]").forEach(function(b){
     b.addEventListener("click", function(){
       const k = b.getAttribute("data-voice");
@@ -1451,21 +1598,26 @@ function renderVoices(){
 
 const ARP_MODES = [
   {id:"auto",   label:"依曲子設定", info:"每首曲子照自己的設定彈：彩虹小路是琶音，其他曲子左手是單音（每個和弦只按一個鍵）。"},
-  {id:"single", label:"單音（按一個鍵）", info:"所有曲子左手都用單音：每個和弦只按一個鍵（Do ⑤、Fa ②、Sol ①），其餘由電子琴自動伴奏。"},
+  {id:"single", label:"單音（按一個鍵）", info:"所有曲子左手都用單音：每個和弦只按一個鍵（ㄉㄡ ⑤、ㄈㄚ ②、ㄙㄡ ①），其餘由電子琴自動伴奏。"},
   {id:"arp",    label:"琶音", info:"所有曲子左手都改成琶音：把和弦的音一個一個彈出來（彩虹小路維持自己的琶音寫法）。"}
 ];
+function renderArpInfo(){
+  const info = document.getElementById("arpInfo");
+  if(!info) return;
+  const cur = ARP_MODES.find(function(m){ return m.id === arpMode; });
+  info.textContent = cur ? cur.info : "";
+}
 function renderArp(){
   const row = document.getElementById("arpRow");
   if(!row) return;
   row.innerHTML = ARP_MODES.map(function(m){
     return '<button class="btn small" data-arp="'+m.id+'" aria-pressed="'+(arpMode===m.id)+'">'+m.label+'</button>';
   }).join("");
-  const cur = ARP_MODES.find(function(m){ return m.id === arpMode; });
-  const info = document.getElementById("arpInfo");
-  if(info) info.textContent = cur ? cur.info : "";
+  renderArpInfo(); syncLocks();
   row.querySelectorAll("[data-arp]").forEach(function(b){
     b.addEventListener("click", function(){
       const id = b.getAttribute("data-arp");
+      if(player) return;
       if(id === arpMode) return;
       arpMode = id;
       stopPlayback();
@@ -1622,15 +1774,16 @@ function bindControls(){
     if(pausedAt !== null) resumePlayback();
     else if(player) pausePlayback();
   });
+  document.getElementById("btnStop").addEventListener("click", function(){ stopPlayback(); });
+  document.getElementById("btnRestart").addEventListener("click", restartPlayback);
+  document.getElementById("btnKill").addEventListener("click", killAllSound);
   document.getElementById("btnFollow").addEventListener("click", function(){
     state.follow = !state.follow;
     renderFollowButton(); saveState();
   });
-  document.getElementById("btnSolfege").addEventListener("click", function(){
-    if(player || pausedAt !== null) stopPlayback();
-    state.solfegeSys = state.solfegeSys === "zhuyin" ? "do" : "zhuyin";
-    saveState();
-    renderSolfegeBtn(); renderSolfegeStrip(); renderScore(); renderKeyboard();
+  document.getElementById("btnKeys").addEventListener("click", function(){
+    state.showKeys = !state.showKeys;
+    renderKeysToggle(); saveState();
   });
   document.getElementById("btnPill").addEventListener("click", function(){
     if(player || pausedAt !== null) stopPlayback();
@@ -1692,7 +1845,7 @@ function bindControls(){
     saveState();
   });
 
-  const KEYMAP = { a:"C4", s:"D4", d:"E4", f:"F4", g:"G4", h:"A4", j:"B4", z:"C4", x:"F4", c:"G4" };
+  const KEYMAP = { a:"C4", s:"D4", d:"E4", f:"F4", g:"G4", h:"A4", j:"B4", z:"C3", x:"F3", c:"G3", v:"A2" };
   const held = {};
   document.addEventListener("keydown", function(ev){
     const tag = (ev.target.tagName || "").toLowerCase();
@@ -1719,7 +1872,7 @@ function bindControls(){
   });
 }
 
-/* 提供給「樂譜修改器.html」（只放在老師電腦裡）使用的接口；公開頁面不會用到 */
+/* 對外接口（測試用） */
 const hooks = {};
 function emit(name){ (hooks[name] || []).forEach(function(fn){ try{ fn(); }catch(e){} }); }
 window.KB = {
@@ -1743,7 +1896,6 @@ function boot(){
   bindProgress();
   renderProgress();
   renderSolfegeStrip();
-  renderSolfegeBtn();
   renderPillBtn();
   renderSongs();
   renderRangeButtons();
@@ -1754,6 +1906,7 @@ function boot(){
   renderFollowButton();
   renderHands();
   renderKeyboard();
+  renderKeysToggle();
   bindControls();
   const start = function(){
     renderScore();

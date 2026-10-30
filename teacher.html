@@ -21,6 +21,25 @@
   <div class="solfege-strip" id="solfegeStrip"></div>
 </header>
 
+<div class="playbar" id="playBar">
+  <div class="playbar-in">
+    <div class="pb-btns">
+      <button class="btn primary" id="btnOnce" aria-pressed="false">▶ 播放</button>
+      <button class="btn primary" id="btnLoop" aria-pressed="false">🔁 循環</button>
+      <button class="btn" id="btnPause" aria-pressed="false" disabled>⏸ 暫停</button>
+      <button class="btn" id="btnStop" disabled>⏹ 停止</button>
+      <button class="btn" id="btnRestart">↺ 重來</button>
+      <button class="btn danger" id="btnKill" title="強制關掉所有聲音（聲音卡住或網頁怪怪的時候用）">🛑 強制停止</button>
+      <button class="btn" id="btnFollow" aria-pressed="true" title="播放時自動捲動樂譜">📍 跟隨樂譜</button>
+    </div>
+    <div class="pb-speed">
+      <label class="field" for="bpmRange">速度</label>
+      <input type="range" id="bpmRange" min="50" max="120" step="1" value="72">
+      <span class="value-tag" id="bpmValue">♩ = 72</span>
+    </div>
+  </div>
+</div>
+
 <main>
   <div class="card problems" id="songProblems" role="alert" hidden></div>
 
@@ -29,21 +48,10 @@
     <div class="lessons" id="songGrid"></div>
   </section>
 
-  <section class="card" aria-labelledby="ctrlTitle">
-    <h2 id="ctrlTitle">播放控制</h2>
-
-    <div class="ctrl-row">
-      <button class="btn primary" id="btnOnce" aria-pressed="false">▶ 播放一次</button>
-      <button class="btn primary" id="btnLoop" aria-pressed="false">🔁 一直循環</button>
-      <button class="btn" id="btnPause" aria-pressed="false" disabled>⏸ 暫停</button>
-      <button class="btn" id="btnFollow" aria-pressed="true" title="播放時自動捲動樂譜">📍 跟隨樂譜</button>
-    </div>
-
-    <div class="ctrl-row">
-      <label class="field" for="bpmRange">速度</label>
-      <input type="range" id="bpmRange" min="50" max="120" step="1" value="72" style="flex:1 1 140px;max-width:260px;">
-      <span class="value-tag" id="bpmValue">♩ = 72</span>
-    </div>
+  <details class="card" id="practiceCard">
+    <summary>練習設定（速度階梯、伴奏節奏、左手伴奏、練習段落）</summary>
+    <div class="more-body">
+    <p class="lock-note" hidden>🔒 播放中，這裡先鎖住。要修改請先按上方的「⏹ 停止」。</p>
 
     <div class="ctrl-row">
       <button class="btn small" id="btnLadder" aria-pressed="false">🪜 速度階梯</button>
@@ -78,31 +86,36 @@
         <div class="range-info" id="rangeInfo"></div>
       </div>
     </div>
-
-    <div class="ctrl-row">
-      <span class="field" style="flex:0 0 auto;">練習模式</span>
-      <div class="mode-row" id="modeRow"></div>
     </div>
+  </details>
 
-    <div class="ctrl-row">
-      <span class="field" style="flex:0 0 auto;">網頁聲音</span>
-      <div class="voice-row" id="voiceRow"></div>
+  <details class="card" id="moreSettings">
+    <summary>更多設定（練習模式、網頁聲音、音名提示、延音踏板、混音器）</summary>
+    <div class="more-body">
+      <p class="lock-note" hidden>🔒 播放中，這裡先鎖住。要修改請先按上方的「⏹ 停止」。</p>
+      <div class="ctrl-row">
+        <span class="field" style="flex:0 0 auto;">練習模式</span>
+        <div class="mode-row" id="modeRow"></div>
+      </div>
+
+      <div class="ctrl-row">
+        <span class="field" style="flex:0 0 auto;">網頁聲音</span>
+        <div class="voice-row" id="voiceRow"></div>
+      </div>
+
+      <div class="ctrl-row">
+        <span class="field" style="flex:0 0 auto;">音名提示</span>
+        <button class="btn small" id="btnPill" aria-pressed="true"></button>
+      </div>
+
+      <div class="switch-line">
+        <button class="switch" id="sustainSw" aria-pressed="true" aria-label="延音踏板"></button>
+        <span>延音踏板 Sustain</span>
+      </div>
+
+      <div class="mixer" id="mixer" style="margin-top:10px;"></div>
     </div>
-
-    <div class="ctrl-row">
-      <span class="field" style="flex:0 0 auto;">唱名顯示</span>
-      <button class="btn small" id="btnSolfege" aria-pressed="false"></button>
-      <span class="field" style="flex:0 0 auto;">音名提示</span>
-      <button class="btn small" id="btnPill" aria-pressed="true"></button>
-    </div>
-
-    <div class="switch-line">
-      <button class="switch" id="sustainSw" aria-pressed="true" aria-label="延音踏板"></button>
-      <span>延音踏板 Sustain</span>
-    </div>
-
-    <div class="mixer" id="mixer" style="margin-top:10px;"></div>
-  </section>
+  </details>
 
   <section class="card" aria-labelledby="scoreTitle">
     <h2 id="scoreTitle">樂譜</h2>
@@ -127,7 +140,7 @@
     <p class="tool-note">
       這一頁的勾選進度<b>只存在這台電腦的瀏覽器裡</b>。<br>
       ・要保存學生進度：定期按「備份」；換電腦時用「還原備份」。<br>
-      ・要修改樂譜：請打開電腦裡的「樂譜修改器.html」（不在網頁上，學生看不到）。
+      ・要修改樂譜：請跟 Claude 說，改好確認後再上傳 songs.js。
     </p>
     <div class="ctrl-row">
       <button class="btn" id="btnExportCSV">📊 匯出進度表 CSV</button>
@@ -150,12 +163,12 @@
         <li>先在本頁把速度調到學生覺得舒服的數字，再按電子琴上的「速度」鍵把數字調成一樣，兩邊就會同步。</li>
         <li>建議從 ♩ = 60～72 開始，熟練後再慢慢加快。</li>
       </ul>
-      <h3>三、左手在分割點左邊按 Do、Fa、Sol</h3>
+      <h3>三、左手在分割點左邊按 ㄉㄡ、ㄈㄚ、ㄙㄡ</h3>
       <ul>
         <li>電子琴通常有一個「分割點」，分割點左邊是伴奏區。請學生把手放在分割點左邊。</li>
-        <li>左手只需要按三個位置：Do（C）、Fa（F）、Sol（G），手不需要移動，靠手指伸縮即可。</li>
-        <li>本頁的左手指法：Do 用第 ⑤ 指、Fa 用第 ② 指、Sol 用第 ① 指。</li>
-        <li>第 6 課的挑戰曲多了 Am（A 小和弦）：左手小指 ⑤ 往下伸到比 Do 低的 La，換和弦時手要稍微移動。電子琴單指和弦要彈出小和弦的方法依機型不同（常見做法是按 La 加左邊一個黑鍵），請對照琴的說明書。</li>
+        <li>左手只需要按三個位置：ㄉㄡ（C）、ㄈㄚ（F）、ㄙㄡ（G），手不需要移動，靠手指伸縮即可。</li>
+        <li>本頁的左手指法：ㄉㄡ 用第 ⑤ 指、ㄈㄚ 用第 ② 指、ㄙㄡ 用第 ① 指。</li>
+        <li>第 5 課的挑戰曲多了 Am（A 小和弦）：左手小指 ⑤ 往下伸到比 ㄉㄡ 低的 ㄌㄚ，換和弦時手要稍微移動。電子琴單指和弦要彈出小和弦的方法依機型不同（常見做法是按 ㄌㄚ 加左邊一個黑鍵），請對照琴的說明書。</li>
       </ul>
       <h3>四、左手手型</h3>
       <ul>
@@ -180,16 +193,18 @@
 <footer class="sticky-footer" id="stickyFooter">
   <div class="kb-shell">
     <div class="now-chord" id="nowChord">
-      <div class="nc-label">現在的和弦</div>
-      <div class="nc-value" id="ncValue">—</div>
-      <div class="nc-left" id="ncLeft">—</div>
-      <div class="nc-next" id="ncNext">下一個：—</div>
+      <div class="nc-cell"><span class="nc-label">現在的和弦</span><span class="nc-value" id="ncValue">—</span></div>
+      <div class="nc-cell"><span class="nc-label">左手</span><span class="nc-left" id="ncLeft">—</span></div>
+      <div class="nc-cell"><span class="nc-next" id="ncNext">下一個：—</span></div>
+      <button class="btn small kb-toggle" id="btnKeys" aria-pressed="true" aria-controls="kbBody">🎹 隱藏鍵盤</button>
     </div>
-    <div class="kb-main">
-      <div class="zone-row"><span>◀ 左手·和弦區</span><span>右手·旋律區 ▶</span></div>
-      <div class="keys" id="keys"></div>
-      <div class="hands">
+    <div class="kb-body" id="kbBody">
+      <div class="kb-block kb-left">
+        <div class="keys" id="keysL"></div>
         <div class="hand" id="handL"><span class="hlabel">左手</span></div>
+      </div>
+      <div class="kb-block kb-right">
+        <div class="keys" id="keysR"></div>
         <div class="hand" id="handR"><span class="hlabel">右手</span></div>
       </div>
     </div>
